@@ -1093,18 +1093,21 @@
         display: flex;
         justify-content: flex-end;
         align-items: flex-start;
+        pointer-events: none;
         width: 100%;
         height: 100%;
         box-sizing: border-box;
         padding: 1.25rem 1.5rem 0 0;
-        pointer-events: auto;
+        pointer-events: none;
     }
 
     .clock-stack {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: flex-end;
         gap: 0.75rem;
+        pointer-events: auto;
+        max-width: max-content;
     }
 
     .clock-container :global(.clock-date) {

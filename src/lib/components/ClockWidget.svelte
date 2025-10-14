@@ -105,6 +105,10 @@
         font-size: clamp(3.25rem, 5vw, 5.5rem);
         font-weight: 600;
         line-height: 0.9;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum' 1;
+        width: 100%;
+        text-align: right;
     }
 
     :global(.dark) .clock-widget {

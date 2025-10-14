@@ -6,7 +6,7 @@ function jsonOrText(res: Response) {
 }
 
 // (If you later require Supabase auth on the API, pass access_token to add Authorization)
-function authHeaders(token?: string) {
+function authHeaders(token?: string): Record<string, string> {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -18,6 +18,7 @@ export async function getRoomStatus(fetcher: FetchLike = fetch) {
         rooms: any[];
         ongoingMeetings: any[];
         upcomingMeetings: any[];
+        errors?: { room: string; error: string }[];
     }>;
 }
 
