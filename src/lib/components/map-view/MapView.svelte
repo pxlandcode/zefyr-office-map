@@ -1,6 +1,5 @@
 <script lang="ts">
     import FloorPlan from '$lib/components/FloorPlan.svelte';
-    import ClockWidget from '$lib/components/ClockWidget.svelte';
     import LeftMeetings from './LeftMeetings.svelte';
 
     import { getRoomStatus } from '$lib/utils/api/api.js';
@@ -65,15 +64,12 @@
 </script>
 
 <main
-    class="grid min-h-screen w-full grid-cols-[clamp(300px,26vw,420px)_1fr] items-start gap-6 p-8"
+    class="grid min-h-screen w-full grid-cols-[clamp(300px,26vw,420px)_1fr] items-start gap-6 p-8 bg-gray-50"
 >
     <LeftMeetings {ongoingMeetings} {upcomingMeetings} />
 
     <div class="relative flex h-full w-full items-start justify-end">
         <FloorPlan {rooms} on:roomclick={handleRoomClick} />
-        <div class="absolute right-0 top-0 z-20">
-            <ClockWidget />
-        </div>
     </div>
 </main>
 

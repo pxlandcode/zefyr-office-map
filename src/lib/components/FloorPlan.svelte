@@ -1,6 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
     import { getRoomStatus } from '$lib/utils/helpers/roomHelpers.js';
+    import ClockWidget from '$lib/components/ClockWidget.svelte';
     import type { Room } from '$lib/types/roomTypes';
 
     const dispatch = createEventDispatcher();
@@ -44,7 +45,7 @@
     }
 </script>
 
-<svg viewBox="0 0 800 600">
+<svg class="floorplan-svg" viewBox="0 0 800 600">
     <svg viewBox="0 0 933 889" fill="none" xmlns="http://www.w3.org/2000/svg">
         <g id="Floor-Plan-Group">
             <path
@@ -1056,6 +1057,12 @@
                 </g>
             </g>
         </g>
+        <foreignObject x="293" y="36" width="640" height="240" class="clock-foreign-object">
+            <div class="clock-container">
+                <ClockWidget />
+            </div>
+        </foreignObject>
+
         <defs>
             <clipPath id="clip0_28_639">
                 <rect width="138" height="54" fill="white" transform="translate(55.0001 194.303)" />
@@ -1065,12 +1072,36 @@
 </svg>
 
 <style lang="scss">
-    svg {
+    .floorplan-svg {
         height: 100%;
         width: 100%;
         max-height: 100%;
         max-width: 100%;
         object-fit: contain;
+    }
+
+    .clock-foreign-object {
+        overflow: visible;
+        pointer-events: none;
+    }
+
+    .clock-container {
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-start;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 1.25rem 1.5rem 0 0;
+        pointer-events: auto;
+    }
+
+    .clock-container :global(.clock-date) {
+        font-size: 2rem;
+    }
+
+    .clock-container :global(.clock-time) {
+        font-size: clamp(8rem, 11vw, 12rem);
     }
 
     .non-interactive {

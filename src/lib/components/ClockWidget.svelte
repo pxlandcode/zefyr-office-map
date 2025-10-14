@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { goto } from '$app/navigation';
     import { onDestroy, onMount } from 'svelte';
 
     export let showWeek = false;
@@ -6,6 +7,10 @@
 
     let now = new Date();
     let t: ReturnType<typeof setInterval> | undefined;
+    let clickTimestamps: number[] = [];
+
+    const CLICK_THRESHOLD = 5;
+    const CLICK_WINDOW_MS = 1500;
 
     function week(d: Date) {
         const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -40,14 +45,38 @@
     onDestroy(() => {
         if (t) clearInterval(t);
     });
+
+    function handleClockClick() {
+        const timestamp = Date.now();
+        clickTimestamps = clickTimestamps.filter((ts) => timestamp - ts <= CLICK_WINDOW_MS);
+        clickTimestamps.push(timestamp);
+
+        if (clickTimestamps.length >= CLICK_THRESHOLD) {
+            clickTimestamps = [];
+            void goto('/sign-up');
+        }
+    }
+
+    function handleClockKeydown(event: KeyboardEvent) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleClockClick();
+        }
+    }
 </script>
 
-<div class="clock-widget select-none">
+<button
+    class="clock-widget select-none"
+    type="button"
+    aria-label="Visa registreringssida"
+    on:click={handleClockClick}
+    on:keydown={handleClockKeydown}
+>
     <p class="clock-date">
         {fmtDate(now)}{showWeek ? ` · v.${week(now)}` : ''}
     </p>
     <p class="clock-time">{fmtTime(now)}</p>
-</div>
+</button>
 
 <style>
     .clock-widget {
@@ -57,6 +86,10 @@
         text-align: right;
         color: #1f2937;
         gap: 0.25rem;
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        padding: 0;
     }
 
     .clock-date {
@@ -64,6 +97,8 @@
         font-weight: 500;
         letter-spacing: 0.01em;
         text-transform: capitalize;
+        text-align: left;
+        width: 100%;
     }
 
     .clock-time {
@@ -74,5 +109,10 @@
 
     :global(.dark) .clock-widget {
         color: #f4f4f5;
+    }
+
+    .clock-widget:focus-visible {
+        outline: 2px solid #2563eb;
+        outline-offset: 4px;
     }
 </style>
