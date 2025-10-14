@@ -45,7 +45,6 @@ export const actions: Actions = {
                 return fail(403, { message: `Endast ${allowed} får logga in här.` });
             }
 
-            // 3) Password sign-in
             const { error } = await locals.supabase.auth.signInWithPassword({ email, password });
             if (error) {
                 console.error('signInWithPassword error:', {
