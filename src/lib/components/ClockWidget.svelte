@@ -1,6 +1,11 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { onDestroy, onMount } from 'svelte';
+    import {
+        CLICK_INDICATOR_MIN_VISIBLE,
+        CLICK_INDICATOR_TOTAL,
+        clickIndicatorStore,
+    } from '../../stores/clickIndicatorStore';
 
     export let showWeek = false;
     export let timeZone: string | null = 'Europe/Stockholm';
@@ -8,9 +13,19 @@
     let now = new Date();
     let t: ReturnType<typeof setInterval> | undefined;
     let clickTimestamps: number[] = [];
+    let indicatorHideTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const CLICK_THRESHOLD = 5;
+    const CLICK_THRESHOLD = CLICK_INDICATOR_TOTAL;
     const CLICK_WINDOW_MS = 1500;
+    const INDICATOR_HIDE_DELAY = 2000;
+
+    function hideIndicator() {
+        clickIndicatorStore.reset();
+        if (indicatorHideTimeout) {
+            clearTimeout(indicatorHideTimeout);
+            indicatorHideTimeout = null;
+        }
+    }
 
     function week(d: Date) {
         const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -44,6 +59,7 @@
 
     onDestroy(() => {
         if (t) clearInterval(t);
+        hideIndicator();
     });
 
     function handleClockClick() {
@@ -51,8 +67,24 @@
         clickTimestamps = clickTimestamps.filter((ts) => timestamp - ts <= CLICK_WINDOW_MS);
         clickTimestamps.push(timestamp);
 
+        const visibleCount = Math.min(clickTimestamps.length, CLICK_THRESHOLD);
+        clickIndicatorStore.setProgress(visibleCount);
+
+        if (indicatorHideTimeout) {
+            clearTimeout(indicatorHideTimeout);
+            indicatorHideTimeout = null;
+        }
+
+        if (visibleCount >= CLICK_INDICATOR_MIN_VISIBLE) {
+            indicatorHideTimeout = setTimeout(() => {
+                hideIndicator();
+                clickTimestamps = [];
+            }, INDICATOR_HIDE_DELAY);
+        }
+
         if (clickTimestamps.length >= CLICK_THRESHOLD) {
             clickTimestamps = [];
+            hideIndicator();
             void goto('/sign-up');
         }
     }

@@ -1105,7 +1105,7 @@
     .clock-stack {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         gap: 0.75rem;
         pointer-events: auto;
         max-width: max-content;

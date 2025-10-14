@@ -6,9 +6,15 @@
     import RoomPopUp from '$lib/components/popups/RoomPopUp.svelte';
     import BrandStamp from '$lib/components/ui/brand-stamp/BrandStamp.svelte';
     import BrandStampPopUp from '$lib/components/popups/BrandStampPopUp.svelte';
+    import ClickIndicator from '$lib/components/ClickIndicator.svelte';
+    import { clickIndicatorStore } from '../stores/clickIndicatorStore';
 </script>
 
 <NotificationContainer />
+
+{#if $clickIndicatorStore.show}
+    <ClickIndicator count={$clickIndicatorStore.count} total={$clickIndicatorStore.total} />
+{/if}
 
 <slot />
 
