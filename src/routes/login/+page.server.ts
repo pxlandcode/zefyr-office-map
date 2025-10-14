@@ -1,5 +1,5 @@
 // src/routes/login/+page.server.ts
-import { fail, redirect, type Actions, Redirect } from '@sveltejs/kit';
+import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { DISPLAY_EMAIL } from '$env/static/private';
 
 export const actions: Actions = {

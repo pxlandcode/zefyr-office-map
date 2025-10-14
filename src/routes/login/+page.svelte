@@ -1,4 +1,3 @@
-<!-- src/routes/login/+page.svelte -->
 <script lang="ts">
     export let form: any;
 </script>
