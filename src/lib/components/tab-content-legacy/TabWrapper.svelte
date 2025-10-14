@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { TabOption } from '$lib/types/tabTypes';
     import { createEventDispatcher } from 'svelte';
-    import Icon from '../icon-component/Icon.svelte';
+    import Icon from '../ui/icon-component/Icon.svelte';
 
     export let tabOptions: TabOption[] = [];
     const dispatch = createEventDispatcher();

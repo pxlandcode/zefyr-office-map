@@ -20,6 +20,7 @@ export interface Room {
 }
 
 export interface Meeting {
+    id?: string;
     startDate: string;
     endDate: string;
     organizer: string;

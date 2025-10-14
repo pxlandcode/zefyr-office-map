@@ -6,9 +6,9 @@
     import RoomBookingContent from '$lib/components/popup-content/RoomBookingContent.svelte';
     import PopupWrapper from '$lib/components/ui/popup-wrapper/PopupWrapper.svelte';
 
-    import TabWrapper from '$lib/components/ui/tab-wrapper/TabWrapper.svelte';
+    import TabWrapper from '$lib/components/tab-content-legacy/TabWrapper.svelte';
     import type { TabOption } from '$lib/types/tabTypes';
-    import OngoingMeetings from '$lib/components/tab-content/ongoing-meetings/OngoingMeetings.svelte';
+    import OngoingMeetings from '$lib/components/tab-content-legacy/ongoing-meetings/OngoingMeetings.svelte';
 
     export let data: { rooms: Room[]; ongoingMeetings: Meeting[]; upcomingMeetings: Meeting[] };
 
