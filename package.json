@@ -27,6 +27,7 @@
 	"type": "module",
 	"dependencies": {
 		"@azure/identity": "^4.11.1",
+		"@lucide/svelte": "^0.545.0",
 		"@microsoft/microsoft-graph-client": "^3.0.7",
 		"@supabase/auth-helpers-sveltekit": "^0.13.0",
 		"@supabase/supabase-js": "^2.57.2",

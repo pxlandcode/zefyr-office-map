@@ -2,6 +2,7 @@
     import { createEventDispatcher } from 'svelte';
     import { getRoomStatus } from '$lib/utils/helpers/roomHelpers.js';
     import ClockWidget from '$lib/components/ClockWidget.svelte';
+    import WeatherStrip from '$lib/components/WeatherStrip.svelte';
     import type { Room } from '$lib/types/roomTypes';
 
     const dispatch = createEventDispatcher();
@@ -1059,7 +1060,10 @@
         </g>
         <foreignObject x="293" y="36" width="640" height="240" class="clock-foreign-object">
             <div class="clock-container">
-                <ClockWidget />
+                <div class="clock-stack">
+                    <ClockWidget />
+                    <WeatherStrip />
+                </div>
             </div>
         </foreignObject>
 
@@ -1094,6 +1098,13 @@
         box-sizing: border-box;
         padding: 1.25rem 1.5rem 0 0;
         pointer-events: auto;
+    }
+
+    .clock-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
     }
 
     .clock-container :global(.clock-date) {
