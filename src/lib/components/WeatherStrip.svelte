@@ -309,7 +309,6 @@
 <style>
     .weather-bubble {
         position: relative;
-        backdrop-filter: blur(12px);
     }
 
     .precip-indicator {
@@ -398,7 +397,7 @@
             filter: drop-shadow(0 0 0 rgba(252, 211, 77, 0.2));
         }
         50% {
-            filter: drop-shadow(0 0 6px rgba(252, 211, 77, 0.45));
+            filter: drop-shadow(0 0 6px rgba(255, 215, 84, 0.45));
         }
         100% {
             filter: drop-shadow(0 0 0 rgba(252, 211, 77, 0.2));
