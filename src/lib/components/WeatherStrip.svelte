@@ -272,13 +272,15 @@
                     class="weather-bubble flex w-20 min-w-[5rem] flex-col items-center gap-2 rounded-lg text-center font-light"
                 >
                     <div class="flex flex-col items-center gap-1">
-                        <svelte:component
-                            this={segment.icon}
-                            class={`h-7 w-7 ${segment.iconClass}`}
-                            aria-hidden="true"
-                        />
+                        <div class={`weather-icon h-7 w-7 ${segment.iconClass}`} aria-hidden="true">
+                            <svelte:component
+                                this={segment.icon}
+                                class="h-full w-full"
+                                aria-hidden="true"
+                            />
+                        </div>
                         {#if segment.hasPrecipitation}
-                            <span class="precip-indicator"></span>
+                            <span class="precip-indicator" aria-hidden="true"></span>
                         {/if}
                     </div>
                     <p class="text-lg leading-none">{segment.temperatureLabel}</p>
@@ -311,6 +313,53 @@
         position: relative;
     }
 
+    .weather-icon {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9999px;
+        transform-origin: center;
+        transform-box: fill-box;
+        transition: filter 0.4s ease;
+    }
+
+    .weather-icon.icon-cloud,
+    .weather-icon.icon-cloudsun {
+        animation: cloudDrift 18s linear infinite;
+        color: #d6dcff;
+    }
+
+    .weather-icon.icon-cloudsun {
+        color: #fde68a;
+    }
+
+    .weather-icon.icon-drizzle,
+    .weather-icon.icon-rain {
+        animation: rainDrift 4s ease-in-out infinite;
+        color: #38bdf8;
+    }
+
+    .weather-icon.icon-lightning {
+        animation: lightningFlash 7s ease-in-out infinite;
+        color: #facc15;
+        filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.45));
+    }
+
+    .weather-icon.icon-sun {
+        animation: sunGlow 10s ease-in-out infinite;
+        color: #fde047;
+    }
+
+    :global(.weather-icon.icon-sun circle) {
+        fill: rgba(253, 224, 71, 0.3);
+    }
+
+    .weather-icon.icon-snow {
+        animation: snowDrift 6s ease-in-out infinite;
+        color: #bae6fd;
+    }
+
     .precip-indicator {
         display: block;
         width: 1.75rem;
@@ -320,49 +369,15 @@
         animation: rainPulse 2.6s ease-in-out infinite;
     }
 
-    @keyframes rainPulse {
-        0%,
-        100% {
-            opacity: 0.3;
-            transform: translateY(0);
-        }
-        50% {
-            opacity: 0.9;
-            transform: translateY(2px);
-        }
-    }
-
-    :global(.icon-cloud),
-    :global(.icon-cloudsun) {
-        animation: cloudDrift 18s linear infinite;
-    }
-
-    :global(.icon-drizzle),
-    :global(.icon-rain) {
-        animation: rainDrift 4s ease-in-out infinite;
-    }
-
-    :global(.icon-lightning) {
-        animation: lightningFlash 7s ease-in-out infinite;
-    }
-
-    :global(.icon-sun) {
-        animation: sunGlow 12s ease-in-out infinite;
-    }
-
-    :global(.icon-snow) {
-        animation: snowDrift 6s ease-in-out infinite;
-    }
-
     @keyframes cloudDrift {
         0% {
-            transform: translateX(-2%);
+            transform: translateX(-4%);
         }
         50% {
-            transform: translateX(2%);
+            transform: translateX(4%);
         }
         100% {
-            transform: translateX(-2%);
+            transform: translateX(-4%);
         }
     }
 
@@ -371,7 +386,7 @@
             transform: translateY(0);
         }
         50% {
-            transform: translateY(2px);
+            transform: translateY(3px);
         }
         100% {
             transform: translateY(0);
@@ -382,25 +397,23 @@
         0%,
         95%,
         100% {
-            filter: brightness(1);
+            filter: drop-shadow(0 0 0 rgba(250, 204, 21, 0.25));
         }
         96% {
-            filter: brightness(1.8);
+            filter: drop-shadow(0 0 14px rgba(250, 204, 21, 0.95));
         }
         97% {
-            filter: brightness(0.9);
+            filter: drop-shadow(0 0 5px rgba(250, 204, 21, 0.35));
         }
     }
 
     @keyframes sunGlow {
-        0% {
-            filter: drop-shadow(0 0 0 rgba(252, 211, 77, 0.2));
+        0%,
+        100% {
+            filter: drop-shadow(0 0 0 rgba(253, 224, 71, 0.15));
         }
         50% {
-            filter: drop-shadow(0 0 20px rgba(255, 215, 84, 1));
-        }
-        100% {
-            filter: drop-shadow(0 0 0 rgba(252, 211, 77, 0.2));
+            filter: drop-shadow(0 0 22px rgba(253, 224, 71, 0.9));
         }
     }
 
@@ -409,32 +422,60 @@
             transform: translateY(0);
         }
         50% {
-            transform: translateY(1.5px);
+            transform: translateY(2px);
         }
         100% {
             transform: translateY(0);
         }
     }
 
-    :global(.icon-cloud) {
+    @keyframes rainPulse {
+        0%,
+        100% {
+            opacity: 0.3;
+            transform: translateY(0);
+        }
+        50% {
+            opacity: 0.95;
+            transform: translateY(2px);
+        }
+    }
+
+    .weather-icon.icon-cloud {
         animation-delay: -2s;
     }
-    :global(.icon-cloudsun) {
+    .weather-icon.icon-cloudsun {
         animation-delay: -4s;
     }
-    :global(.icon-drizzle) {
+    .weather-icon.icon-drizzle {
         animation-delay: -1s;
     }
-    :global(.icon-rain) {
+    .weather-icon.icon-rain {
         animation-delay: -3s;
     }
-    :global(.icon-lightning) {
+    .weather-icon.icon-lightning {
         animation-delay: -5s;
     }
-    :global(.icon-sun) {
+    .weather-icon.icon-sun {
         animation-delay: -2.5s;
     }
-    :global(.icon-snow) {
+    .weather-icon.icon-snow {
         animation-delay: -1.5s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .weather-icon.icon-cloud,
+        .weather-icon.icon-cloudsun,
+        .weather-icon.icon-drizzle,
+        .weather-icon.icon-rain,
+        .weather-icon.icon-lightning,
+        .weather-icon.icon-sun,
+        .weather-icon.icon-snow,
+        .precip-indicator {
+            animation-duration: 0.01ms;
+            animation-iteration-count: 1;
+            animation-play-state: paused;
+            filter: none;
+        }
     }
 </style>
