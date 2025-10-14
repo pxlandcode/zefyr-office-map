@@ -42,9 +42,37 @@
   });
 </script>
 
-<div class="rounded-xl px-4 py-3 bg-white/80 dark:bg-zinc-900/70 backdrop-blur shadow border border-black/5 select-none">
-  <div class="text-4xl font-semibold leading-none">{fmtTime(now)}</div>
-  <div class="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
-    {fmtDate(now)}{showWeek ? ` • v.${week(now)}` : ''}
-  </div>
+<div class="clock-widget select-none">
+  <p class="clock-date">
+    {fmtDate(now)}{showWeek ? ` · v.${week(now)}` : ''}
+  </p>
+  <p class="clock-time">{fmtTime(now)}</p>
 </div>
+
+<style>
+  .clock-widget {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    color: #1f2937;
+    gap: 0.25rem;
+  }
+
+  .clock-date {
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    text-transform: capitalize;
+  }
+
+  .clock-time {
+    font-size: clamp(3.25rem, 5vw, 5.5rem);
+    font-weight: 600;
+    line-height: 0.9;
+  }
+
+  :global(.dark) .clock-widget {
+    color: #f4f4f5;
+  }
+</style>

@@ -64,12 +64,12 @@
   });
 </script>
 
-<main class="grid h-screen w-full grid-cols-[clamp(300px,26vw,420px)_1fr] items-stretch gap-4 p-3">
+<main class="grid min-h-screen w-full grid-cols-[clamp(300px,26vw,420px)_1fr] items-start gap-6 p-8">
   <LeftMeetings {ongoingMeetings} {upcomingMeetings} />
 
-  <div class="relative grid h-full w-full place-items-center">
+  <div class="relative flex h-full w-full items-start justify-end">
     <FloorPlan {rooms} on:roomclick={handleRoomClick} />
-    <div class="absolute right-3 top-3 z-20">
+    <div class="absolute right-0 top-0 z-20">
       <ClockWidget showWeek />
     </div>
   </div>
@@ -77,6 +77,6 @@
 
 <style>
   main {
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.12));
+    background: #ffffff;
   }
 </style>
