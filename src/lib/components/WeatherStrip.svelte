@@ -265,11 +265,11 @@
         <p class="text-red-400">{error}</p>
     </div>
 {:else if segments.length}
-    <div class="weather-strip mt-2 rounded-xl text-black">
+    <div class="weather-strip mt-2 rounded-xl text-black opacity-[0.75]">
         <div class="flex gap-3">
             {#each segments as segment (segment.label)}
                 <div
-                    class="weather-bubble flex w-20 min-w-[5rem] flex-col items-center gap-2 rounded-lg text-center"
+                    class="weather-bubble flex w-20 min-w-[5rem] flex-col items-center gap-2 rounded-lg text-center font-light"
                 >
                     <div class="flex flex-col items-center gap-1">
                         <svelte:component
@@ -281,7 +281,7 @@
                             <span class="precip-indicator"></span>
                         {/if}
                     </div>
-                    <p class="text-lg font-semibold leading-none">{segment.temperatureLabel}</p>
+                    <p class="text-lg leading-none">{segment.temperatureLabel}</p>
                     <p class="text-xs lowercase opacity-70">{segment.label}</p>
                 </div>
             {/each}

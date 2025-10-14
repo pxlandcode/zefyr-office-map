@@ -1097,25 +1097,26 @@
         width: 100%;
         height: 100%;
         box-sizing: border-box;
-        padding: 1.25rem 1.5rem 0 0;
+        margin-top: 2rem;
+        padding-right: 4.5rem;
         pointer-events: none;
     }
 
     .clock-stack {
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
+        align-items: flex-start;
         gap: 0.75rem;
         pointer-events: auto;
         max-width: max-content;
     }
 
     .clock-container :global(.clock-date) {
-        font-size: 2rem;
+        font-size: 1.7rem;
     }
 
     .clock-container :global(.clock-time) {
-        font-size: clamp(8rem, 11vw, 12rem);
+        font-size: 7rem;
     }
 
     .non-interactive {

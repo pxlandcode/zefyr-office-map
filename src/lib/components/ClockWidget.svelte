@@ -94,11 +94,12 @@
 
     .clock-date {
         font-size: 1.05rem;
-        font-weight: 500;
+        font-weight: 200;
         letter-spacing: 0.01em;
         text-transform: capitalize;
         text-align: left;
         width: 100%;
+        opacity: 0.75;
     }
 
     .clock-time {
