@@ -2,7 +2,6 @@
     import { createEventDispatcher } from 'svelte';
     import { getRoomStatus } from '$lib/utils/helpers/roomHelpers.js';
     import type { Room } from '$lib/types/roomTypes';
-    import { ripple } from '$lib/actions/ripple';
 
     const dispatch = createEventDispatcher();
 
