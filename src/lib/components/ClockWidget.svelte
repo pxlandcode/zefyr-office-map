@@ -72,7 +72,7 @@
     on:click={handleClockClick}
     on:keydown={handleClockKeydown}
 >
-    <p class="clock-date">
+    <p class="clock-date text-gray-500">
         {fmtDate(now)}{showWeek ? ` · v.${week(now)}` : ''}
     </p>
     <p class="clock-time">{fmtTime(now)}</p>
@@ -99,7 +99,6 @@
         text-transform: capitalize;
         text-align: left;
         width: 100%;
-        opacity: 0.75;
     }
 
     .clock-time {

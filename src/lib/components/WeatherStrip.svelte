@@ -265,7 +265,7 @@
         <p class="text-red-400">{error}</p>
     </div>
 {:else if segments.length}
-    <div class="weather-strip mt-2 rounded-xl text-black opacity-[0.75]">
+    <div class="weather-strip mt-2 rounded-xl text-gray-500">
         <div class="flex gap-3">
             {#each segments as segment (segment.label)}
                 <div
@@ -282,11 +282,11 @@
                         {/if}
                     </div>
                     <p class="text-lg leading-none">{segment.temperatureLabel}</p>
-                    <p class="text-xs lowercase opacity-70">{segment.label}</p>
+                    <p class="text-xs lowercase">{segment.label}</p>
                 </div>
             {/each}
         </div>
-        <div class="text-xs lowercase opacity-70 flex items-center gap-2 mt-[-20px]">
+        <div class="text-xs lowercase flex items-center gap-2 mt-[-20px]">
             <!-- <Wind class="h-4 w-4" aria-hidden="true" /> -->
             {#if wind.direction !== null}
                 <ArrowUp
@@ -397,7 +397,7 @@
             filter: drop-shadow(0 0 0 rgba(252, 211, 77, 0.2));
         }
         50% {
-            filter: drop-shadow(0 0 6px rgba(255, 215, 84, 0.45));
+            filter: drop-shadow(0 0 20px rgba(255, 215, 84, 1));
         }
         100% {
             filter: drop-shadow(0 0 0 rgba(252, 211, 77, 0.2));
