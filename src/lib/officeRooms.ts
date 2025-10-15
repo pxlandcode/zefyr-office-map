@@ -22,16 +22,22 @@ export const officeRooms: Record<string, OfficeRoom> = {
     },
     'Friday-Room': {
         id: 'Friday-Room',
-        name: 'Friday Vibes',
-        company: 'Friday Vibes',
-        tagline: 'We make your brand feel like Friday',
-        description:
-            'Friday Vibes lyfter tech-företags employer branding och talangstrategi. Vi skapar engagerande berättelser, rekryteringsresor och kulturinitiativ som attraherar, behåller och stärker era mest värdefulla människor.',
+        name: 'Friday Vibes HQ',
+        company: 'Friday Vibes HQ',
+        tagline: 'Vi skapar fredag varje dag',
+        description: `Välkommen in där idéer rullar snabbare än rullskridskor.
+                        Vi filmar, fotar och fångar känslan.
+
+                        Vi hittar drömkandidaten innan du hinner säga “intervju”.
+
+                        Vi bygger kulturer där människor vill stanna.
+                        `,
+        extra: 'Kom in, ta en kaffe — eller en danspaus eller bolla idéer.',
         image: fridayVibesPopupImage,
         icon: 'FridayVibes',
         logo: fridayVibesLogo,
         logoHeight: 40,
-        brandColor: '#ED95B7',
+        brandColor: '#EC95B9',
     },
     'Mavrix-Room': {
         id: 'Mavrix-Room',
