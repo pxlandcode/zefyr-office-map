@@ -55,9 +55,9 @@ async function fetchRoomStatusWithRetry(
         try {
             const events = await getRoomEvents(client, room.email, startOfDay, endOfDay);
             const eventCount = Array.isArray(events?.value) ? events.value.length : 0;
-            console.log(`Hämtade ${eventCount} möten för rum ${room.email}`);
+
             const statusData = processMeetingStatus(events, now);
-            console.log('Statusdata för rum', room.email, statusData);
+
             return formatRoomStatus(room, statusData, now);
         } catch (error) {
             attempt += 1;

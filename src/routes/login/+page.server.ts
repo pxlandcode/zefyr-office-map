@@ -22,7 +22,7 @@ export const actions: Actions = {
 
             // 1) Read form
             const form = await request.formData();
-            console.log('Login form data:', Array.from(form.entries()));
+
             const email = String(form.get('email') ?? '')
                 .trim()
                 .toLowerCase();

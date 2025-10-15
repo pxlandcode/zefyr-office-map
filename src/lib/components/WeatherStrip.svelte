@@ -282,7 +282,7 @@
         <p class="text-red-400">{error}</p>
     </div>
 {:else if segments.length}
-    <div class="weather-strip mt-2 rounded-xl text-gray-500">
+    <div class="weather-strip mt-2 rounded-xl text-gray-700">
         <div class="flex gap-3">
             {#each segments as segment (segment.label)}
                 <div

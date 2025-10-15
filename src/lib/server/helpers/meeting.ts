@@ -23,7 +23,6 @@ export function processMeetingStatus(events: any, now: Date) {
     const todaysMeetings: any[] = [];
 
     events.value.forEach((event: any) => {
-        console.log('Processing event:', event);
         const start = new Date(event.start.dateTime);
         const end = new Date(event.end.dateTime);
         const organizerName = event.organizer.emailAddress.name;

@@ -8,7 +8,6 @@ export function formatTime(dateTime: string | Date, timeZone = 'Europe/Stockholm
 }
 
 export function formatRoomStatus(room: any, statusData: any, _now: Date) {
-    console.log('formatRoomStatus:', { room, statusData });
     const displayName = getRoomDisplayName(room.email);
 
     const nextMeetingInfo = statusData.nextMeeting

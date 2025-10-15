@@ -78,7 +78,7 @@
 </script>
 
 <main
-    class="grid min-h-screen w-full grid-cols-[clamp(300px,26vw,420px)_1fr] items-start gap-6 p-8 bg-gray-50"
+    class="grid min-h-screen w-full grid-cols-[clamp(300px,26vw,420px)_1fr] items-start gap-6 p-8 bg-white"
 >
     <LeftMeetings {ongoingMeetings} {upcomingMeetings} />
 
@@ -88,7 +88,4 @@
 </main>
 
 <style>
-    main {
-        background: #ffffff;
-    }
 </style>
