@@ -37,9 +37,20 @@ export const POST = async ({ request, locals }) => {
         const endOfDay = getEndOfDay(now);
         if (end > endOfDay) end = endOfDay;
 
+        const timeRangeSummary = `${formatTime(now)} - ${formatTime(end)}`;
+        const bookingLengthSummary =
+            bookingOption === 0 ? 'Tills nästa möte' : `${bookingOption} minuter`;
+        const subject = `Panelbokning: ${pinUser.full_name}`;
+        const bodyContent = [
+            '<p><strong>Bokat på panel (kiosk)</strong></p>',
+            `<p>Bokad av: ${pinUser.full_name}</p>`,
+            `<p>Tid: ${timeRangeSummary}</p>`,
+            `<p>Längd: ${bookingLengthSummary}</p>`,
+        ].join('');
+
         await createCalendarEvent(client, {
-            subject: 'Rumsbokning via panelen',
-            bodyContent: `Bokat via konferensrumsapplikationen av ${pinUser.full_name}`,
+            subject,
+            bodyContent,
             startTime: now.toISOString(),
             endTime: end.toISOString(),
             timeZone: 'Europe/Stockholm',

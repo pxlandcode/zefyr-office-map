@@ -25,16 +25,17 @@ export function processMeetingStatus(events: any, now: Date) {
     events.value.forEach((event: any) => {
         const start = new Date(event.start.dateTime);
         const end = new Date(event.end.dateTime);
-        const organizerName = event.organizer.emailAddress.name;
+        const organizerName = event.organizer?.emailAddress?.name ?? 'Okänd';
+        const isPanelBooking = Boolean(event.categories?.includes('PanelBooking'));
+        const panelBooker = isPanelBooking ? extractPanelBookingName(event) : null;
+        const displayOrganizer = isPanelBooking ? (panelBooker ?? 'Bokat på panel') : organizerName;
 
         if (now >= start && now < end) {
             status = 'Upptagen';
             currentMeeting = {
                 startDate: event.start.dateTime,
                 endDate: event.end.dateTime,
-                organizer: event.categories?.includes('PanelBooking')
-                    ? 'Bokat på panel'
-                    : organizerName,
+                organizer: displayOrganizer,
             };
             currentMeetingOrganizer = currentMeeting.organizer;
         }
@@ -42,9 +43,7 @@ export function processMeetingStatus(events: any, now: Date) {
         todaysMeetings.push({
             startDate: event.start.dateTime,
             endDate: event.end.dateTime,
-            organizer: event.categories?.includes('PanelBooking')
-                ? 'Bokat på panel'
-                : organizerName,
+            organizer: displayOrganizer,
         });
     });
 
@@ -74,6 +73,35 @@ export async function getNextMeeting(client: any, roomEmail: string, now: Date, 
         })
         .get();
     return events.value;
+}
+
+function extractPanelBookingName(event: any): string | null {
+    const subject = typeof event.subject === 'string' ? event.subject.trim() : '';
+    const subjectMatch = subject.match(/^Panelbokning(?:\s*\([^)]*\))?[:\-]\s*(.+)$/i);
+    if (subjectMatch) {
+        return subjectMatch[1].trim();
+    }
+
+    const bodyPreview = typeof event.bodyPreview === 'string' ? event.bodyPreview : '';
+    const bodyContent = typeof event.body?.content === 'string' ? event.body.content : '';
+
+    for (const raw of [bodyPreview, bodyContent]) {
+        if (!raw) continue;
+        const normalized = raw
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        const match =
+            normalized.match(/Panelbokad av[:\s]+([^.;]+)/i) ||
+            normalized.match(/Bokad(?:e)? av[:\s]+([^.;]+)/i);
+        if (match) {
+            return match[1].trim();
+        }
+    }
+
+    return null;
 }
 
 export async function createCalendarEvent(

@@ -13,8 +13,19 @@ export function getRoomStatus(currentMeetingEndsIn: number | null): string {
     }
 }
 
-export function getBookingOrganizer(organizer: string) {
-    return organizer === 'Bokat på panel' ? 'Bokad på panel' : `Bokat av: ${organizer}`;
+export function getBookingOrganizer(organizer: string | null | undefined) {
+    if (!organizer) {
+        return 'Bokad av: Okänd';
+    }
+
+    if (organizer === 'Bokat på panel') {
+        return 'Bokad på panel';
+    }
+
+    const match = organizer.match(/^Panelbokning(?:\s*\([^)]*\))?[:\-]\s*(.+)$/i);
+    const normalized = match ? match[1].trim() : organizer;
+
+    return `Bokat av: ${normalized}`;
 }
 
 export function getRoomDisplayName(email: string) {
