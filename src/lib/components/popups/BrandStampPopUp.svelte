@@ -21,8 +21,7 @@
 <PopupWrapper bind:open on:close={handleClose} width="420px" z={60} header={title} {icon}>
     <div class="space-y-2">
         <p class="text-sm font-semibold">
-            Detta är ett proof of concept och ett sidoprojekt utvecklat av Pixel&Code_ och är ett
-            pågående arbete.
+            Detta är ett proof of concept och ett sidoprojekt utvecklat av Pixel&Code_.
         </p>
         <p class="text-sm">Har du ett projekt du vill ha hjälp med?</p>
         <p class="text-sm">
