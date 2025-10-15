@@ -14,6 +14,8 @@ import IconCrossMeeting from './IconCrossMeeting.svelte';
 import IconMoreTime from './IconMoreTime.svelte';
 import IconPassword from './IconPassword.svelte';
 import IconPixelCode from './IconPixelCode.svelte';
+import IconMavrix from './IconMavrix.svelte';
+import IconFridayVibes from './IconFridayVibes.svelte';
 
 export {
     IconClose,
@@ -32,4 +34,6 @@ export {
     IconMoreTime,
     IconPassword,
     IconPixelCode,
+    IconMavrix,
+    IconFridayVibes,
 };

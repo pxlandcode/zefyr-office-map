@@ -8,6 +8,11 @@
     const dispatch = createEventDispatcher();
 
     export let meetingRooms: MeetingRoom[] = [];
+    export let rooms: MeetingRoom[] = [];
+
+    let activeRooms: MeetingRoom[] = [];
+
+    $: activeRooms = meetingRooms.length ? meetingRooms : rooms;
 
     let roomStatuses: Record<string, string> = {};
 
@@ -23,7 +28,7 @@
     }
 
     function getRoomStatusByMail(roomMail: string): string {
-        const room = meetingRooms.find((r) => r.email === roomMail);
+        const room = activeRooms.find((r) => r.email === roomMail);
         if (!room) return 'Unknown';
 
         return getRoomStatus(room.currentMeetingEndsIn);
@@ -38,8 +43,8 @@
         if (event.key === 'Enter') handleRoomClick(roomId, roomMail);
     }
 
-    $: if (meetingRooms && meetingRooms.length) {
-        roomStatuses = meetingRooms.reduce((acc: Record<string, string>, meetingRooms) => {
+    $: if (activeRooms && activeRooms.length) {
+        roomStatuses = activeRooms.reduce((acc: Record<string, string>, meetingRooms) => {
             acc[meetingRooms.email] = getRoomStatusClass(meetingRooms.email);
             return acc;
         }, {});

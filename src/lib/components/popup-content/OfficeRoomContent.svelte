@@ -8,6 +8,7 @@
         description?: string;
         extra?: string;
         logo?: string;
+        logoHeight?: number;
         website?: string;
         brandColor?: string;
     };
@@ -39,7 +40,13 @@
 
         <div class="flex items-end justify-end gap-4">
             {#if room.logo}
-                <img src={room.logo} alt="Logotyp" class="h-5 w-auto" loading="lazy" />
+                <img
+                    src={room.logo}
+                    alt="Logotyp"
+                    class="h-6 w-auto"
+                    style={`height: ${room.logoHeight}px`}
+                    loading="lazy"
+                />
             {/if}
         </div>
     </div>

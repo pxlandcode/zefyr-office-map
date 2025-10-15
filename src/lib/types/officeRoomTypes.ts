@@ -9,6 +9,7 @@ export type OfficeRoom = {
     website?: string;
     icon?: string;
     logo?: string;
+    logoHeight?: number;
     brandColor?: string;
 };
 

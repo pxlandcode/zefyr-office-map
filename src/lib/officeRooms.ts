@@ -1,5 +1,9 @@
-import pixelcodePopupImage from '$lib/assets/company-images/pixelcodepopupimage.jpg';
+import pixelcodePopupImage from '$lib/assets/company-images/pixelcodepopupimage.webp';
+import fridayVibesPopupImage from '$lib/assets/company-images/fridayvibespopupimage.webp';
+import mavrixPopupImage from '$lib/assets/company-images/mavrixpopupimage.webp';
 import pixelcodeLogo from '$lib/assets/company-logos/pixelcodelogo.svg';
+import fridayVibesLogo from '$lib/assets/company-logos/fridayvibeslogo.svg';
+import mavrixLogo from '$lib/assets/company-logos/mavrixlogo.svg';
 import type { OfficeRoom } from '$lib/types/officeRoomTypes';
 
 export const officeRooms: Record<string, OfficeRoom> = {
@@ -20,18 +24,26 @@ export const officeRooms: Record<string, OfficeRoom> = {
         id: 'Friday-Room',
         name: 'Friday Vibes',
         company: 'Friday Vibes',
-        tagline: 'Where brilliant ideas and good times collide.',
+        tagline: 'We make your brand feel like Friday',
         description:
-            'Fredagar hos oss handlar om att samla smarta människor kring spännande samtal. Vi matchar entreprenörer, kreatörer och tekniknördar för att lösa riktiga problem – alltid med en avslappnad stämning och mycket skratt.',
-        image: pixelcodePopupImage,
+            'Friday Vibes lyfter tech-företags employer branding och talangstrategi. Vi skapar engagerande berättelser, rekryteringsresor och kulturinitiativ som attraherar, behåller och stärker era mest värdefulla människor.',
+        image: fridayVibesPopupImage,
+        icon: 'FridayVibes',
+        logo: fridayVibesLogo,
+        logoHeight: 40,
+        brandColor: '#ED95B7',
     },
     'Mavrix-Room': {
         id: 'Mavrix-Room',
         name: 'Mavrix',
         company: 'Mavrix',
-        tagline: 'Strategy-led storytellers for bold brands.',
+        tagline: 'Teknik med mening',
         description:
-            'Mavrix väver samman strategi, berättelser och design för att göra varumärken oförglömliga. Vi hjälper team ta nästa steg med tydliga narrativ, modiga koncept och kreativt genomförande som märks.',
-        image: pixelcodePopupImage,
+            'Mavrix kombinerar strategi, teknik och mänsklig insikt för att omvandla möjligheter till verkligt värde. Vi guidar organisationer i digital transformation, från AI och Microsoft-ekosystem till helhetslösningar som stärker affär, kultur och kundrelation.',
+        image: mavrixPopupImage,
+        icon: 'Mavrix',
+        logo: mavrixLogo,
+        logoHeight: 40,
+        brandColor: '#034EA1',
     },
 };

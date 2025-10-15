@@ -34,8 +34,9 @@
         }
     }
 
-    function startPolling() {
+    function startPolling(immediate = false) {
         stopPolling();
+        if (immediate) fetchRooms();
         pollingInterval = setInterval(fetchRooms, 5000);
     }
 
@@ -45,6 +46,8 @@
             pollingInterval = null;
         }
     }
+
+    if (isBrowser) startPolling(true);
 
     type RoomClickDetail = {
         roomId: string;
@@ -64,12 +67,14 @@
         if (officeRoom) openOfficeRoomPopup(officeRoom);
     }
 
-    function resetPollingAndFetch() {
+    async function resetPollingAndFetch() {
         stopPolling();
-        fetchRooms().finally(startPolling);
+        try {
+            await fetchRooms();
+        } finally {
+            startPolling();
+        }
     }
-
-    if (isBrowser) startPolling();
 
     onDestroy(() => {
         if (!isBrowser) return;
