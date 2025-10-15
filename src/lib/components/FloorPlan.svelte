@@ -46,7 +46,7 @@
     }
 </script>
 
-<svg class="floorplan-svg" viewBox="0 0 800 600">
+<svg class="floorplan-svg" viewBox="0 0 933 889">
     <svg viewBox="0 0 933 889" fill="none" xmlns="http://www.w3.org/2000/svg">
         <g id="Floor-Plan-Group">
             <path
