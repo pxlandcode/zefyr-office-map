@@ -62,7 +62,10 @@
     });
 </script>
 
-<aside bind:this={sidebarEl} class="flex h-full flex-col gap-4 overflow-hidden px-4 self-start">
+<aside
+    bind:this={sidebarEl}
+    class="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 self-stretch"
+>
     <section class="flex flex-col gap-2">
         <h3 class="font-semibold">Pågående</h3>
 

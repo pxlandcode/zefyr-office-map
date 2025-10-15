@@ -78,11 +78,13 @@
 </script>
 
 <main
-    class="grid min-h-screen w-full grid-cols-[clamp(300px,26vw,420px)_1fr] items-start gap-6 p-8 bg-white"
+    class="grid h-screen w-screen min-h-0 min-w-0 overflow-hidden grid-cols-[clamp(300px,26vw,420px)_1fr] items-stretch gap-6 bg-white p-10"
 >
     <LeftMeetings {ongoingMeetings} {upcomingMeetings} />
 
-    <div class="relative flex h-full w-full items-start justify-end">
+    <div
+        class="relative flex h-full w-full min-h-0 min-w-0 items-center justify-end overflow-hidden"
+    >
         <FloorPlan {meetingRooms} on:roomclick={handleRoomClick} />
     </div>
 </main>

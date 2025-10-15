@@ -46,7 +46,7 @@
     }
 </script>
 
-<svg class="floorplan-svg" viewBox="0 0 933 889">
+<svg class="floorplan-svg" viewBox="0 0 933 889" preserveAspectRatio="xMidYMid meet">
     <svg viewBox="0 0 933 889" fill="none" xmlns="http://www.w3.org/2000/svg">
         <g id="Floor-Plan-Group">
             <path
@@ -1104,10 +1104,11 @@
 <style lang="scss">
     .floorplan-svg {
         height: 100%;
-        width: 100%;
+        width: auto;
         max-height: 100%;
         max-width: 100%;
-        object-fit: contain;
+        flex-shrink: 0;
+        display: block;
     }
 
     .clock-foreign-object {

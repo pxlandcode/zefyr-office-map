@@ -1,11 +1,11 @@
 
 @import 'normalize.css';
+@import './lib/styles/meetings.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import './lib/styles/meetings.css';
 
 
 * {
