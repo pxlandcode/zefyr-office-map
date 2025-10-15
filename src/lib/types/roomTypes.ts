@@ -6,7 +6,7 @@ export const roomDisplayNames: Record<string, string> = {
     'phonebooth@zefyr.se': 'Phone Booth',
 };
 
-export interface Room {
+export interface MeetingRoom {
     name: string;
     email: string;
     capacity: number;
@@ -27,8 +27,8 @@ export interface Meeting {
     roomName?: string;
 }
 
-export interface RoomBookingOverview {
-    rooms: Room[];
+export interface MeetingRoomStatus {
+    rooms: MeetingRoom[];
     ongoingMeetings: Meeting[];
     upcomingMeetings: Meeting[];
 }

@@ -1,5 +1,5 @@
 import { format } from 'date-fns-tz';
-import type { Room } from '$lib/types/roomTypes';
+import type { MeetingRoom } from '$lib/types/roomTypes';
 import { AppNotificationType } from '$lib/types/notificationTypes';
 import { addNotification } from '../../../stores/notificationStore';
 import { bookRoom, cancelRoomBooking, extendRoomBooking } from '$lib/utils/api/api.js';
@@ -51,7 +51,7 @@ export function generateTimeBookingOptions(
 
 // BOOK
 export async function handleBooking(
-    room: Room,
+    room: MeetingRoom,
     selectedBookingOption: number,
     dispatch: (event: string) => void
 ) {
@@ -76,7 +76,7 @@ export async function handleBooking(
 }
 
 // CANCEL
-export async function handleCancel(room: Room, dispatch: (event: string) => void) {
+export async function handleCancel(room: MeetingRoom, dispatch: (event: string) => void) {
     const ok = await runWithPin({
         title: 'Bekräfta avbokning',
         confirmIcon: 'CrossMeeting',
@@ -104,7 +104,7 @@ export async function handleCancel(room: Room, dispatch: (event: string) => void
 
 // EXTEND
 export async function handleExtend(
-    room: Room,
+    room: MeetingRoom,
     selectedExtendOption: number,
     dispatch: (event: string) => void
 ) {

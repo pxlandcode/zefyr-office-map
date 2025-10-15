@@ -4,6 +4,7 @@
     import { browser } from '$app/environment';
     import '../app.css';
     import RoomPopUp from '$lib/components/popups/RoomPopUp.svelte';
+    import OfficeRoomPopUp from '$lib/components/popups/OfficeRoomPopUp.svelte';
     import BrandStamp from '$lib/components/ui/brand-stamp/BrandStamp.svelte';
     import BrandStampPopUp from '$lib/components/popups/BrandStampPopUp.svelte';
     import ClickIndicator from '$lib/components/ClickIndicator.svelte';
@@ -22,5 +23,6 @@
 {#if browser}
     <PinPromptPopUp />
     <RoomPopUp />
+    <OfficeRoomPopUp />
     <BrandStampPopUp />
 {/if}

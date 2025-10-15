@@ -92,6 +92,15 @@ export async function fetchSmhiForecast(
         },
     }));
 
+    const tz = 'Europe/Stockholm';
+    const todayKey = formatInTimeZone(new Date(now), tz, 'yyyy-MM-dd');
+    const tomorrowKey = formatInTimeZone(new Date(now + 24 * 60 * 60 * 1000), tz, 'yyyy-MM-dd');
+
+    const todayAndTomorrowEntries = entries.filter((entry) => {
+        const entryDateKey = formatInTimeZone(new Date(entry.validTime), tz, 'yyyy-MM-dd');
+        return entryDateKey === todayKey || entryDateKey === tomorrowKey;
+    });
+
     cachedForecast = {
         expiresAt: now + CACHE_TTL_MS,
         entries,
@@ -111,6 +120,7 @@ export function pickNearestByLocalHour(
 
     let bestEntry: SmhiForecastEntry | null = null;
     let bestDiff = Number.POSITIVE_INFINITY;
+    let bestHour: number | null = null;
 
     for (const entry of entries) {
         const hour = getHourInTimeZone(entry.validTime, tz);
@@ -126,6 +136,7 @@ export function pickNearestByLocalHour(
         ) {
             bestEntry = entry;
             bestDiff = hourDiff;
+            bestHour = hour;
         }
     }
 

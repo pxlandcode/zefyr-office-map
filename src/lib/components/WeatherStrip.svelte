@@ -162,10 +162,15 @@
         const nowThresholdUtc = fromZonedTime(currentLocalIso, TIME_ZONE);
 
         const slots = determineSlots(currentHour);
-        const annotated = entries.map((entry) => ({
-            entry,
-            utcDate: new Date(entry.validTime),
-        }));
+        const annotated = entries.map((entry) => {
+            const utcDate = new Date(entry.validTime);
+            const localDateKey = formatInTimeZone(utcDate, TIME_ZONE, 'yyyy-MM-dd');
+            return {
+                entry,
+                utcDate,
+                localDateKey,
+            };
+        });
 
         const result: DisplaySegment[] = [];
 
@@ -174,12 +179,24 @@
                 slot.type === 'now'
                     ? nowThresholdUtc
                     : buildThresholdUtc(currentDateIso, slot.targetHour, slot.dayOffset);
+            const thresholdTime = thresholdUtc.getTime();
+            const targetDateKey = formatInTimeZone(thresholdUtc, TIME_ZONE, 'yyyy-MM-dd');
 
-            const filtered = annotated
-                .filter((item) => item.utcDate.getTime() >= thresholdUtc.getTime())
+            const filteredAnnotated = annotated.filter(
+                (item) => item.utcDate.getTime() >= thresholdTime
+            );
+
+            const sameDayEntries = filteredAnnotated
+                .filter((item) => item.localDateKey === targetDateKey)
                 .map((item) => item.entry);
 
-            const pool = filtered.length ? filtered : entries;
+            const filteredEntries = filteredAnnotated.map((item) => item.entry);
+
+            const pool = sameDayEntries.length
+                ? sameDayEntries
+                : filteredEntries.length
+                  ? filteredEntries
+                  : entries;
             const chosen = pickNearestByLocalHour(pool, slot.targetHour, TIME_ZONE);
             const { icon, className } = selectIcon(chosen);
 

@@ -1,0 +1,21 @@
+<svg width="360" height="240" viewBox="0 0 360 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0" y1="0" x2="360" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#22D3EE" />
+    </linearGradient>
+  </defs>
+  <rect width="360" height="240" rx="24" fill="url(#grad)" />
+  <g fill="#ffffff" font-family="'Inter', 'Segoe UI', sans-serif" text-anchor="middle">
+    <text x="180" y="100" font-size="46" font-weight="700">Pixel &amp; Code</text>
+    <text x="180" y="142" font-size="18" opacity="0.85">Designing immersive digital experiences</text>
+    <text x="180" y="172" font-size="16" opacity="0.7">Stockholm · Since 2016</text>
+  </g>
+  <g fill="#A5F3FC" opacity="0.35">
+    <circle cx="72" cy="58" r="18" />
+    <circle cx="310" cy="46" r="12" />
+    <circle cx="304" cy="192" r="22" />
+    <rect x="58" y="170" width="48" height="12" rx="6" />
+    <rect x="250" y="90" width="64" height="14" rx="7" />
+  </g>
+</svg>

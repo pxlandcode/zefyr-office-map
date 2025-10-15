@@ -3,7 +3,20 @@ import { error, fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabaseAdmin';
 import { PIN_PEPPER, REQUIRE_AUTH, GATEWAY_EMAIL } from '$env/static/private';
 
-const ALLOWED_DOMAINS = new Set(['pixelcode.se', 'zefyr.se', 'fridayvibes.se']);
+const ALLOWED_DOMAINS = new Set([
+    'pixelcode.se',
+    'zefyr.se',
+    'fridayvibes.se',
+    'a2accounting.se',
+    'atom8.se',
+    'geisli.se',
+    'mavrix.se',
+    'homerun.cx',
+    'zunnypeople.com',
+    'wadeinsight.com',
+    'reddy.se',
+    'fyrenab.se',
+]);
 
 function domainOf(email: string) {
     const m = email

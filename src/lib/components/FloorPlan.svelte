@@ -3,15 +3,15 @@
     import { getRoomStatus } from '$lib/utils/helpers/roomHelpers.js';
     import ClockWidget from '$lib/components/ClockWidget.svelte';
     import WeatherStrip from '$lib/components/WeatherStrip.svelte';
-    import type { Room } from '$lib/types/roomTypes';
+    import type { MeetingRoom } from '$lib/types/roomTypes';
 
     const dispatch = createEventDispatcher();
 
-    export let rooms: Room[] = [];
+    export let meetingRooms: MeetingRoom[] = [];
 
     let roomStatuses: Record<string, string> = {};
 
-    function handleRoomClick(roomId: string, roomMail: string) {
+    function handleRoomClick(roomId: string, roomMail?: string) {
         const roomElement = document.getElementById(roomId);
 
         if (roomElement) {
@@ -19,11 +19,11 @@
             setTimeout(() => roomElement.classList.remove('clicked'), 150);
         }
 
-        dispatch('roomclick', roomMail);
+        dispatch('roomclick', { roomId, roomMail });
     }
 
     function getRoomStatusByMail(roomMail: string): string {
-        const room = rooms.find((r) => r.email === roomMail);
+        const room = meetingRooms.find((r) => r.email === roomMail);
         if (!room) return 'Unknown';
 
         return getRoomStatus(room.currentMeetingEndsIn);
@@ -34,13 +34,13 @@
         return status.toLowerCase();
     }
 
-    function handleKeyDown(event: KeyboardEvent, roomId: string, roomMail: string) {
+    function handleKeyDown(event: KeyboardEvent, roomId: string, roomMail?: string) {
         if (event.key === 'Enter') handleRoomClick(roomId, roomMail);
     }
 
-    $: if (rooms && rooms.length) {
-        roomStatuses = rooms.reduce((acc: Record<string, string>, room) => {
-            acc[room.email] = getRoomStatusClass(room.email);
+    $: if (meetingRooms && meetingRooms.length) {
+        roomStatuses = meetingRooms.reduce((acc: Record<string, string>, meetingRooms) => {
+            acc[meetingRooms.email] = getRoomStatusClass(meetingRooms.email);
             return acc;
         }, {});
     }
@@ -116,6 +116,36 @@
                 on:click={() => handleRoomClick('Teams-Room', 'teamsrum@zefyr.se')}
                 on:keydown={(e) => handleKeyDown(e, 'Teams-Room', 'teamsrum@zefyr.se')}
                 class={`room clickable ${roomStatuses['teamsrum@zefyr.se']}`}
+            />
+            <path
+                id="Pixel-Room"
+                d="M626.376 644.435H442.393V864.184H444.119H626.376V644.435Z"
+                role="button"
+                tabindex="0"
+                aria-label="Pixel Room"
+                on:click={() => handleRoomClick('Pixel-Room')}
+                on:keydown={(e) => handleKeyDown(e, 'Pixel-Room')}
+                class="room clickable fill-room"
+            />
+            <path
+                id="Mavrix-Room"
+                d="M256.461 645.11H442.772V866.306H349.209V876.179H298.25V866.306H221.065V680.507L256.461 645.11Z"
+                role="button"
+                tabindex="0"
+                aria-label="Mavrix Room"
+                on:click={() => handleRoomClick('Mavrix-Room')}
+                on:keydown={(e) => handleKeyDown(e, 'Mavrix-Room')}
+                class="room clickable fill-room"
+            />
+            <path
+                id="Friday-Room"
+                d="M19.3953 136.806V5.94437H223.242V136.806H19.3953Z"
+                role="button"
+                tabindex="0"
+                aria-label="Friday Room"
+                on:click={() => handleRoomClick('Friday-Room')}
+                on:keydown={(e) => handleKeyDown(e, 'Friday-Room')}
+                class="room clickable fill-room"
             />
             <path
                 id="Co-Work-2-Room"
@@ -480,7 +510,7 @@
                     class="fill-mapIcon"
                 />
             </g>
-            <g id="Mavrix-Room-Group">
+            <g id="Mavrix-Room-Group" class="pointer-events-none">
                 <g id="Mavrix-Logo">
                     <path
                         id="Vector_7"
@@ -546,7 +576,7 @@
                 fill="white"
             />
 
-            <g id="Friday-Room-Group">
+            <g id="Friday-Room-Group" class="pointer-events-none">
                 <g id="Friday-Logo">
                     <path
                         id="Vector_29"
@@ -641,11 +671,7 @@
                 </g>
             </g>
 
-            <g id="Pixel-Room-Group">
-                <path
-                    id="Pixel-Room"
-                    d="M626.376 644.435H442.393V864.184H444.119H626.376V644.435Z"
-                />
+            <g id="Pixel-Room-Group" class="pointer-events-none">
                 <g id="Pixel-Logo">
                     <path
                         id="Vector_58"

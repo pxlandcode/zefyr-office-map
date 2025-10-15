@@ -4,10 +4,12 @@
 
     import { getRoomStatus } from '$lib/utils/api/api.js';
     import { onDestroy } from 'svelte';
-    import type { Meeting, Room } from '$lib/types/roomTypes';
+    import type { Meeting, MeetingRoom } from '$lib/types/roomTypes';
     import { openRoomPopup, updateRoomInPopupIfOpen } from '$lib/stores/roomPopupStore';
+    import { openOfficeRoomPopup } from '$lib/stores/officeRoomPopupStore';
+    import { officeRooms } from '$lib/officeRooms';
 
-    export let rooms: Room[] = [];
+    export let meetingRooms: MeetingRoom[] = [];
     export let ongoingMeetings: Meeting[] = [];
     export let upcomingMeetings: Meeting[] = [];
 
@@ -22,11 +24,11 @@
                 upcomingMeetings: fetchedUpcoming,
             } = await getRoomStatus();
 
-            rooms = fetchedRooms;
+            meetingRooms = fetchedRooms;
             ongoingMeetings = fetchedOngoing;
             upcomingMeetings = fetchedUpcoming;
 
-            for (const room of rooms) updateRoomInPopupIfOpen(room);
+            for (const room of meetingRooms) updateRoomInPopupIfOpen(room);
         } catch (err) {
             console.error('Error fetching rooms:', err);
         }
@@ -44,10 +46,22 @@
         }
     }
 
-    function handleRoomClick(event: CustomEvent<string>) {
-        const roomEmail = event.detail;
-        const room = rooms.find((r) => r.email === roomEmail);
-        if (room) openRoomPopup(room, { onBookingUpdated: resetPollingAndFetch });
+    type RoomClickDetail = {
+        roomId: string;
+        roomMail?: string;
+    };
+
+    function handleRoomClick(event: CustomEvent<RoomClickDetail>) {
+        const { roomMail, roomId } = event.detail;
+
+        if (roomMail) {
+            const room = meetingRooms.find((r) => r.email === roomMail);
+            if (room) openRoomPopup(room, { onBookingUpdated: resetPollingAndFetch });
+            return;
+        }
+
+        const officeRoom = officeRooms[roomId];
+        if (officeRoom) openOfficeRoomPopup(officeRoom);
     }
 
     function resetPollingAndFetch() {
@@ -69,7 +83,7 @@
     <LeftMeetings {ongoingMeetings} {upcomingMeetings} />
 
     <div class="relative flex h-full w-full items-start justify-end">
-        <FloorPlan {rooms} on:roomclick={handleRoomClick} />
+        <FloorPlan {meetingRooms} on:roomclick={handleRoomClick} />
     </div>
 </main>
 

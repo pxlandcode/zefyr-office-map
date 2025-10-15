@@ -2,7 +2,7 @@
     import FloorPlan from '$lib/components/FloorPlan.svelte';
     import { getRoomStatus } from '$lib/utils/api/api.js';
     import { onDestroy } from 'svelte';
-    import type { Meeting, Room } from '$lib/types/roomTypes';
+    import type { Meeting, MeetingRoom } from '$lib/types/roomTypes';
     import RoomBookingContent from '$lib/components/popup-content/RoomBookingContent.svelte';
     import PopupWrapper from '$lib/components/ui/popup-wrapper/PopupWrapper.svelte';
 
@@ -10,12 +10,16 @@
     import type { TabOption } from '$lib/types/tabTypes';
     import OngoingMeetings from '$lib/components/tab-content-legacy/ongoing-meetings/OngoingMeetings.svelte';
 
-    export let data: { rooms: Room[]; ongoingMeetings: Meeting[]; upcomingMeetings: Meeting[] };
+    export let data: {
+        rooms: MeetingRoom[];
+        ongoingMeetings: Meeting[];
+        upcomingMeetings: Meeting[];
+    };
 
-    let rooms: Room[] = data.rooms;
+    let rooms: MeetingRoom[] = data.rooms;
     let ongoingMeetings: Meeting[] = data.ongoingMeetings;
     let upcomingMeetings: Meeting[] = data.upcomingMeetings;
-    let selectedRoom: Room | null = null;
+    let selectedRoom: MeetingRoom | null = null;
     let pollingInterval: NodeJS.Timeout;
 
     async function fetchRooms() {

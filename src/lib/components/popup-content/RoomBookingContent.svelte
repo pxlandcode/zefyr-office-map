@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Room } from '$lib/types/roomTypes';
+    import type { MeetingRoom } from '$lib/types/roomTypes';
     import { createEventDispatcher } from 'svelte';
     import Button from '../ui/button/Button.svelte';
     import DailyCalendar from '../ui/daily-calendar/DailyCalendar.svelte';
@@ -16,7 +16,7 @@
     import { formatTimeInHoursAndMinutes } from '$lib/utils/helpers/calendarHelpers';
     import OptionsButton from '../ui/options-button/OptionsButton.svelte';
 
-    export let room: Room | null = null;
+    export let room: MeetingRoom | null = null;
     export let extraClasses: string = '';
 
     const dispatch = createEventDispatcher();

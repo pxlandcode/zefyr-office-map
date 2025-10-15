@@ -1,9 +1,9 @@
 <script lang="ts">
     import MapView from '$lib/components/map-view/MapView.svelte';
-    import type { Meeting, Room } from '$lib/types/roomTypes';
+    import type { Meeting, MeetingRoom } from '$lib/types/roomTypes';
 
     export let data: {
-        rooms: Room[];
+        meetingRooms: MeetingRoom[];
         ongoingMeetings: Meeting[];
         upcomingMeetings: Meeting[];
         error?: string;
@@ -32,7 +32,7 @@
 {/if}
 
 <MapView
-    rooms={data.rooms}
+    meetingRooms={data.meetingRooms}
     ongoingMeetings={data.ongoingMeetings}
     upcomingMeetings={data.upcomingMeetings}
 />
