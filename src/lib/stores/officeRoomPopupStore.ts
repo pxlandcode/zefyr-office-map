@@ -9,7 +9,7 @@ export type OfficeRoomPopupState = {
 
 const defaultOptions: Required<OfficeRoomPopupOptions> = {
     width: '1000px',
-    height: '522px',
+    height: '600px',
 };
 
 const initialState: OfficeRoomPopupState = {
