@@ -19,10 +19,7 @@
     const unsubscribe = officeRoomPopup.subscribe((state) => {
         open = state.open;
         room = state.room;
-        options = {
-            width: '882px',
-            height: '522px',
-        };
+        options = { ...state.options };
     });
     onDestroy(unsubscribe);
 

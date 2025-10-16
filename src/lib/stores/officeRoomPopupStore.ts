@@ -8,8 +8,8 @@ export type OfficeRoomPopupState = {
 };
 
 const defaultOptions: Required<OfficeRoomPopupOptions> = {
-    width: 'min(92vw, 520px)',
-    height: 'auto',
+    width: '882px',
+    height: '522px',
 };
 
 const initialState: OfficeRoomPopupState = {
