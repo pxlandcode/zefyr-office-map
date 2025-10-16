@@ -1,18 +1,60 @@
 <script lang="ts">
+    import { onDestroy, onMount } from 'svelte';
     import { format } from 'date-fns-tz';
     import HourglassIcon from '../hourglass-icon/HourglassIcon.svelte';
 
+    const REFRESH_INTERVAL_MS = 30_000;
+
     export let startDate: string;
     export let endDate: string;
-    export let currentTime: string = new Date().toISOString();
+    export let currentTime: string | undefined = undefined;
     export let showProgress: boolean = false;
 
-    const start = new Date(startDate).getTime();
-    const end = new Date(endDate).getTime();
-    const current = new Date(currentTime).getTime();
+    let start = 0;
+    let end = 0;
+    let duration = 1;
+    let now = Date.now();
+    let timer: ReturnType<typeof setInterval> | undefined;
 
-    $: progress = Math.min(100, Math.max(0, ((current - start) / (end - start)) * 100));
-    $: minutesLeft = Math.max(0, Math.ceil((end - current) / 60000));
+    $: start = new Date(startDate).getTime();
+    $: end = new Date(endDate).getTime();
+    $: duration = Math.max(end - start, 1);
+    $: if (currentTime) {
+        now = new Date(currentTime).getTime();
+    }
+
+    $: progress = Math.min(100, Math.max(0, ((now - start) / duration) * 100));
+    $: minutesLeft = Math.max(0, Math.ceil((end - now) / 60000));
+
+    const startTimer = () => {
+        if (timer) return;
+
+        timer = setInterval(() => {
+            now = Date.now();
+        }, REFRESH_INTERVAL_MS);
+    };
+
+    const stopTimer = () => {
+        if (!timer) return;
+
+        clearInterval(timer);
+        timer = undefined;
+    };
+
+    onMount(() => {
+        if (!currentTime) {
+            startTimer();
+        }
+    });
+
+    onDestroy(stopTimer);
+
+    $: if (currentTime) {
+        stopTimer();
+        now = new Date(currentTime).getTime();
+    } else if (!timer) {
+        startTimer();
+    }
 </script>
 
 <div class="flex items-center text-gray-600 text-sm relative">
