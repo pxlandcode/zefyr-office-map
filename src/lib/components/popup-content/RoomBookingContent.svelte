@@ -57,7 +57,7 @@
         (meeting) => new Date(meeting.startDate) > new Date()
     );
 
-    $: canBook = room?.minutesUntilNextMeeting == null || room?.minutesUntilNextMeeting >= 30;
+    $: canBook = room?.minutesUntilNextMeeting == null || room?.minutesUntilNextMeeting >= 15;
 
     $: canExtend =
         room?.currentMeetingEndsIn != null &&
