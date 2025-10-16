@@ -28,7 +28,7 @@
 
 <div
     bind:this={calendarContainer}
-    class="relative h-96 overflow-y-auto w-full max-w-md bg-white border border-gray-300 rounded-lg shadow-md no-scrollbar"
+    class="relative h-full overflow-y-auto w-full max-w-md bg-white border border-gray-300 rounded-lg shadow-md no-scrollbar"
 >
     <div class="absolute top-0 left-0 w-full">
         {#each Array.from({ length: totalHours }, (_, i) => (startHour + i) % 24) as hour, index}

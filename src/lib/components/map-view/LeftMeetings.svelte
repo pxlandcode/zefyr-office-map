@@ -102,7 +102,7 @@
         {:else}
             <div
                 class="transition-all duration-200 ease-in-out"
-                style="max-height: {showAllUpcoming ? '100vh' : '14rem'}; overflow: hidden;"
+                style="max-height: {showAllUpcoming ? '100dvh' : '14rem'}; overflow: hidden;"
             >
                 {#each visibleUpcoming as meeting (meeting.id ?? meeting.startDate + (meeting.roomName ?? ''))}
                     <div class="meeting-item">

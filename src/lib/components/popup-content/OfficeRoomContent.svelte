@@ -15,8 +15,8 @@
     const title = room.headline ?? room.tagline ?? room.name;
 </script>
 
-<div class="grid md:grid-cols-2 gap-5 h-[400px]">
-    <div class="relative flex flex-col justify-between gap-2">
+<div class="grid h-full min-h-0 gap-5 md:grid-cols-2">
+    <div class="relative flex h-full min-h-0 flex-col justify-between gap-2">
         <div class="space-y-6">
             <h1
                 class="font-serif text-5xl leading-tight sm:text-5xl md:text-[56px] md:leading-[1.05] tracking-[-0.01em] text-slate-900"
@@ -52,7 +52,7 @@
     </div>
 
     <div
-        class="relative border-4 overflow-hidden"
+        class="relative h-full min-h-[240px] overflow-hidden border-4"
         style="border-color: {room.brandColor || '#e5e7eb'}"
     >
         {#if room.image}

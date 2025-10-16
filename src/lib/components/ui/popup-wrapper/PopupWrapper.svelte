@@ -57,25 +57,42 @@
     function clickBackdrop() {
         if (closeOnBackdrop) onClose();
     }
+
+    const viewportPadding = 32;
+    const viewportWidthConstraint = `calc(100vw - ${viewportPadding}px)`;
+    const viewportHeightConstraint = `calc(100dvh - ${viewportPadding}px)`;
+
+    $: modalWidth =
+        width && width !== 'fit-content' ? `min(${width}, ${viewportWidthConstraint})` : 'auto';
+
+    $: modalHeight =
+        height && height !== 'fit-content' ? `min(${height}, ${viewportHeightConstraint})` : 'auto';
+
+    $: modalStyle = `width: ${modalWidth}; max-width: ${viewportWidthConstraint}; height: ${modalHeight}; max-height: ${viewportHeightConstraint};`;
 </script>
 
 {#if open}
     <div
-        class="fixed inset-0 bg-black/50 flex justify-center items-center"
+        class="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
         style="z-index: {z};"
         role="presentation"
         on:click={clickBackdrop}
     >
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
         <div
-            class="modal-content bg-white rounded-lg shadow-lg overflow-hidden transition-all"
+            class="modal-content flex flex-col overflow-hidden rounded-lg bg-white shadow-lg"
             on:click|stopPropagation
-            style="width: {width}; height: {height};"
+            on:keydown|stopPropagation
+            style={modalStyle}
             role="dialog"
             aria-modal="true"
             aria-labelledby="popup-title"
+            tabindex="-1"
         >
-            <div class="p-4">
-                <div class="header flex items-center justify-between pb-2 border-b-2">
+            <div class="modal-inner flex h-full flex-col">
+                <div
+                    class="modal-header flex items-center justify-between gap-3 border-b-2 px-5 pb-2 pt-4"
+                >
                     <div class="flex items-center gap-2">
                         {#if icon}
                             <div
@@ -95,7 +112,7 @@
                     />
                 </div>
 
-                <div class="w-auto h-auto p-4">
+                <div class="modal-body min-h-0 flex-1 overflow-auto p-5">
                     <slot />
                 </div>
             </div>
@@ -105,8 +122,11 @@
 
 <style>
     .modal-content {
-        max-width: 90vw;
-        max-height: 90vh;
+        max-width: none;
+        max-height: none;
+    }
+    .modal-inner {
+        min-height: 0;
     }
     :global(html.dark) .modal-content {
         background-color: #111827;
