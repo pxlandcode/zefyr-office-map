@@ -14,8 +14,9 @@ const ALLOWED_DOMAINS = new Set([
     'homerun.cx',
     'zunnypeople.com',
     'wadeinsight.com',
-    'reddy.se',
     'fyrenab.se',
+    'zyense.se',
+    'striventa.se'
 ]);
 
 function domainOf(email: string) {

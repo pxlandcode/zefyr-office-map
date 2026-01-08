@@ -26,6 +26,7 @@ export async function getRoomStatus(fetcher: FetchLike = fetch) {
 export async function bookRoom(
     roomEmail: string,
     bookingOption: number,
+    startOffsetMinutes: number = 0,
     pin: string,
     opts?: { access_token?: string; fetcher?: FetchLike }
 ) {
@@ -33,7 +34,7 @@ export async function bookRoom(
     const res = await f('/api/rooms/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders(opts?.access_token) },
-        body: JSON.stringify({ roomEmail, bookingOption, pin }),
+        body: JSON.stringify({ roomEmail, bookingOption, startOffsetMinutes, pin }),
     });
     if (!res.ok) throw new Error(await res.text());
     return (await jsonOrText(res)) as { message: string } | string;

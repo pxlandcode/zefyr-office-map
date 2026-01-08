@@ -5,6 +5,8 @@ import { addNotification } from '../../../stores/notificationStore';
 import { bookRoom, cancelRoomBooking, extendRoomBooking } from '$lib/utils/api/api.js';
 import { runWithPin } from '$lib/stores/pinPromptStore'; // ✅ new
 
+export const MIN_BOOKING_MINUTES = 15;
+
 export const bookingOptions: Record<number, string> = {
     30: '30 min',
     60: '60 min',
@@ -43,7 +45,11 @@ export function generateTimeBookingOptions(
         })
         .map(([value, label]) => ({ value: Number(value), label }));
 
-    if (minutesUntilNextMeeting && minutesUntilNextMeeting < 120) {
+    if (
+        minutesUntilNextMeeting &&
+        minutesUntilNextMeeting < 120 &&
+        minutesUntilNextMeeting >= MIN_BOOKING_MINUTES
+    ) {
         options.push({ value: minutesUntilNextMeeting, label: `${minutesUntilNextMeeting} min` });
     }
     return options;
@@ -53,6 +59,7 @@ export function generateTimeBookingOptions(
 export async function handleBooking(
     room: MeetingRoom,
     selectedBookingOption: number,
+    selectedStartOffset: number,
     dispatch: (event: string) => void
 ) {
     const ok = await runWithPin({
@@ -62,16 +69,20 @@ export async function handleBooking(
         actionLabel: 'Bokar…',
         runSuccessDelay: 300,
         run: async (pin) => {
-            await bookRoom(room.email, selectedBookingOption, pin);
+            await bookRoom(room.email, selectedBookingOption, selectedStartOffset, pin);
             dispatch('bookingUpdated'); // refresh behind the modal
         },
     });
     if (!ok) return;
 
+    const startTime = new Date();
+    startTime.setMinutes(startTime.getMinutes() + selectedStartOffset);
+    const formattedStartTime = format(startTime, 'HH:mm', { timeZone: 'Europe/Stockholm' });
+
     addNotification({
         type: AppNotificationType.SUCCESS,
         message: 'Bokning genomförd',
-        description: `Rummet ${room.name} har bokats i ${selectedBookingOption} minuter.`,
+        description: `Rummet ${room.name} har bokats från ${formattedStartTime} i ${selectedBookingOption} minuter.`,
     });
 }
 

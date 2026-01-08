@@ -13,31 +13,48 @@ export const POST = async ({ request, locals }) => {
             return new Response('Unauthorized', { status: 401 });
         }
 
-        const { roomEmail, bookingOption, pin } = (await request.json()) as {
+        const payload = (await request.json()) as {
             roomEmail: string;
             bookingOption: number;
+            startOffsetMinutes?: number;
             pin: string;
         };
+
+        const { roomEmail, bookingOption, pin } = payload;
+        const startOffsetMinutes = Math.max(0, payload.startOffsetMinutes ?? 0);
 
         const pinUser = await verifyPinOrThrow(pin);
 
         const client = await getClient();
         const now = new Date();
-        let end = new Date(now);
+        const start = addMinutes(now, startOffsetMinutes);
+        const endOfDay = getEndOfDay(start);
 
-        if (bookingOption === 0) {
-            const eod = getEndOfDay(now);
-            const events = await getNextMeeting(client, roomEmail, now, eod);
-            const nextEvent = events.find((e: any) => new Date(e.start.dateTime) > now);
-            end = nextEvent ? new Date(nextEvent.start.dateTime) : eod;
-        } else {
-            end = addMinutes(now, bookingOption);
+        if (start >= endOfDay) {
+            return new Response('Starttiden ligger efter slutet på dagen.', { status: 400 });
         }
 
-        const endOfDay = getEndOfDay(now);
-        if (end > endOfDay) end = endOfDay;
+        const events = await getNextMeeting(client, roomEmail, start, endOfDay);
+        const nextEvent = events.find((e: any) => new Date(e.start.dateTime) > start);
 
-        const timeRangeSummary = `${formatTime(now)} - ${formatTime(end)}`;
+        let end: Date;
+
+        if (bookingOption === 0) {
+            end = nextEvent ? new Date(nextEvent.start.dateTime) : endOfDay;
+        } else {
+            end = addMinutes(start, bookingOption);
+            if (nextEvent) {
+                const nextEventStart = new Date(nextEvent.start.dateTime);
+                if (nextEventStart < end) end = nextEventStart;
+            }
+            if (end > endOfDay) end = endOfDay;
+        }
+
+        if (end <= start) {
+            return new Response('Starttiden krockar med nästa bokning.', { status: 400 });
+        }
+
+        const timeRangeSummary = `${formatTime(start)} - ${formatTime(end)}`;
         const bookingLengthSummary =
             bookingOption === 0 ? 'Tills nästa möte' : `${bookingOption} minuter`;
         const subject = `Panelbokning: ${pinUser.full_name}`;
@@ -51,7 +68,7 @@ export const POST = async ({ request, locals }) => {
         await createCalendarEvent(client, {
             subject,
             bodyContent,
-            startTime: now.toISOString(),
+            startTime: start.toISOString(),
             endTime: end.toISOString(),
             timeZone: 'Europe/Stockholm',
             roomEmail,
@@ -62,10 +79,10 @@ export const POST = async ({ request, locals }) => {
         await supabaseAdmin.from('booking_action_audit').insert({
             action: 'book',
             room_email: roomEmail,
-            starts_at: now.toISOString(),
+            starts_at: start.toISOString(),
             ends_at: end.toISOString(),
             app_user_id: pinUser.id,
-            meta: { bookingOption },
+            meta: { bookingOption, startOffsetMinutes },
         });
 
         return json({ message: `Rummet ${roomEmail} bokat fram till kl ${formatTime(end)}` });
