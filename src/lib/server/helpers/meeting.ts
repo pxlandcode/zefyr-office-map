@@ -137,3 +137,7 @@ export async function updateMeetingEndTime(
         },
     });
 }
+
+export async function deleteCalendarEvent(client: any, roomEmail: string, eventId: string) {
+    return client.api(`/users/${roomEmail}/events/${eventId}`).delete();
+}

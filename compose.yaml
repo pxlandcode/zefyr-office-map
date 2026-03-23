@@ -1,0 +1,26 @@
+services:
+  postgres:
+    build:
+      context: ./docker/postgres
+    container_name: zefyr-office-map-postgres
+    environment:
+      POSTGRES_DB: office_map
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_IMPORT_FILE: /seed/schema.sql
+      POSTGRES_SEED_FILE: /seed/seed_local_dev.sql
+      POSTGRES_PIN_PEPPER: local-dev-pepper
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/schema.sql:/seed/schema.sql:ro
+      - ./supabase/seed_local_dev.sql:/seed/seed_local_dev.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d office_map"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
