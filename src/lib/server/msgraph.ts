@@ -1,10 +1,11 @@
 import { Client } from '@microsoft/microsoft-graph-client';
 import { ClientSecretCredential } from '@azure/identity';
 import { TENANT_ID, CLIENT_ID, CLIENT_SECRET, GRAPH_SCOPES } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { createStubGraphClient } from './msgraphStub';
 
 export async function getClient() {
-    if (process.env.GRAPH_BACKEND === 'stub') {
+    if (env.GRAPH_BACKEND === 'stub') {
         return createStubGraphClient();
     }
 

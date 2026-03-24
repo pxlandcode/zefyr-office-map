@@ -1,10 +1,7 @@
 -- Local development / CI seed data.
 --
--- The PIN-setting calls below use the psql variable `pin_pepper`, which is
--- passed in by the Docker init script from `POSTGRES_PIN_PEPPER`.
---
--- If you want the app to authenticate these users locally, make sure your
--- local app env uses the same PIN pepper value.
+-- The pepper value is hardcoded here because this file is exclusively for
+-- local development. It must match PIN_PEPPER in local.env.
 
 insert into app_user (full_name, email, role, active)
 values
@@ -17,15 +14,15 @@ set
   role = excluded.role,
   active = excluded.active;
 
-select set_app_user_pin(id, '1234', :'pin_pepper')
+select set_app_user_pin(id, '1234', 'local-dev-pepper')
 from app_user
 where email = 'dev-booker@example.test';
 
-select set_app_user_pin(id, '4321', :'pin_pepper')
+select set_app_user_pin(id, '4321', 'local-dev-pepper')
 from app_user
 where email = 'dev-admin@example.test';
 
-select set_app_user_pin(id, '9999', :'pin_pepper')
+select set_app_user_pin(id, '9999', 'local-dev-pepper')
 from app_user
 where email = 'dev-locked@example.test';
 
