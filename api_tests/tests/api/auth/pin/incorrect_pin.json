@@ -1,0 +1,9 @@
+{
+  "comment": "Incorrect pin -> 401",
+  "url": "/api/auth/pin/verify",
+  "method": "post",
+  "body": {
+    "pin": 666
+  },
+  "status": 401
+}
