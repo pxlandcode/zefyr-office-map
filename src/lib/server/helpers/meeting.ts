@@ -124,6 +124,41 @@ export async function createCalendarEvent(
     });
 }
 
+export async function createCalendarEventFixed(
+    client: any,
+    { subject, bodyContent, startTime, endTime, timeZone, roomEmail, category }: any
+) {
+    return client.api('/me/events').post({
+        subject,
+        body: {
+            contentType: 'HTML',
+            content: bodyContent,
+        },
+        start: {
+            dateTime: startTime,
+            timeZone,
+        },
+        end: {
+            dateTime: endTime,
+            timeZone,
+        },
+        attendees: [
+            {
+                emailAddress: {
+                    address: roomEmail,
+                    name: 'Bokat på panel',
+                },
+                type: 'resource',
+            },
+        ],
+        categories: [category],
+        location: {
+            displayName: roomEmail,
+            locationEmailAddress: roomEmail,
+        },
+    });
+}
+
 export async function updateMeetingEndTime(
     client: any,
     roomEmail: string,
