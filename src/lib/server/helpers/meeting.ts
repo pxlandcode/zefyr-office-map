@@ -104,7 +104,7 @@ function extractPanelBookingName(event: any): string | null {
     return null;
 }
 
-export async function createCalendarEvent(
+export async function createCalendarEventOld(
     client: any,
     { subject, bodyContent, startTime, endTime, timeZone, roomEmail, category }: any
 ) {
@@ -124,7 +124,7 @@ export async function createCalendarEvent(
     });
 }
 
-export async function createCalendarEventFixed(
+export async function createCalendarEvent(
     client: any,
     { subject, bodyContent, startTime, endTime, timeZone, roomEmail, category }: any
 ) {
