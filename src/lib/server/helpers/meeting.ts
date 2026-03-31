@@ -104,7 +104,7 @@ function extractPanelBookingName(event: any): string | null {
     return null;
 }
 
-export async function createCalendarEvent(
+export async function createCalendarEventOld(
     client: any,
     { subject, bodyContent, startTime, endTime, timeZone, roomEmail, category }: any
 ) {
@@ -124,6 +124,41 @@ export async function createCalendarEvent(
     });
 }
 
+export async function createCalendarEvent(
+    client: any,
+    { subject, bodyContent, startTime, endTime, timeZone, roomEmail, category }: any
+) {
+    return client.api('/me/events').post({
+        subject,
+        body: {
+            contentType: 'HTML',
+            content: bodyContent,
+        },
+        start: {
+            dateTime: startTime,
+            timeZone,
+        },
+        end: {
+            dateTime: endTime,
+            timeZone,
+        },
+        attendees: [
+            {
+                emailAddress: {
+                    address: roomEmail,
+                    name: 'Bokat på panel',
+                },
+                type: 'resource',
+            },
+        ],
+        categories: [category],
+        location: {
+            displayName: roomEmail,
+            locationEmailAddress: roomEmail,
+        },
+    });
+}
+
 export async function updateMeetingEndTime(
     client: any,
     roomEmail: string,
@@ -136,4 +171,8 @@ export async function updateMeetingEndTime(
             timeZone: 'Europe/Stockholm',
         },
     });
+}
+
+export async function deleteCalendarEvent(client: any, roomEmail: string, eventId: string) {
+    return client.api(`/users/${roomEmail}/events/${eventId}`).delete();
 }

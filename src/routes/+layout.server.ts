@@ -16,15 +16,17 @@ export const load = async ({ locals, cookies, url }) => {
             throw redirect(303, `/login?next=${encodeURIComponent(url.pathname + url.search)}`);
         }
 
-        // Optional max-age check you already had
-        const maxDays = Number(import.meta.env.PUBLIC_AUTH_MAX_AGE_DAYS ?? 30);
-        const verifiedAt = Number(cookies.get('auth_verified_at') || 0);
-        const tooOld = !verifiedAt || Date.now() - verifiedAt > maxDays * 24 * 60 * 60 * 1000;
+        // Optional max-age check (skip when Supabase auth is not active)
+        if (locals.supabase) {
+            const maxDays = Number(import.meta.env.PUBLIC_AUTH_MAX_AGE_DAYS ?? 30);
+            const verifiedAt = Number(cookies.get('auth_verified_at') || 0);
+            const tooOld = !verifiedAt || Date.now() - verifiedAt > maxDays * 24 * 60 * 60 * 1000;
 
-        if (tooOld) {
-            await locals.supabase.auth.signOut();
-            cookies.delete('auth_verified_at', { path: '/' });
-            throw redirect(303, '/login?again=1');
+            if (tooOld) {
+                await locals.supabase.auth.signOut();
+                cookies.delete('auth_verified_at', { path: '/' });
+                throw redirect(303, '/login?again=1');
+            }
         }
     }
 

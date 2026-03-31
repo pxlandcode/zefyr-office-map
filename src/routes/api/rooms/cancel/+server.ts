@@ -2,6 +2,7 @@
 import { json } from '@sveltejs/kit';
 import { getClient } from '$lib/server/msgraph';
 import { REQUIRE_AUTH } from '$env/static/private';
+import { deleteCalendarEvent, getRoomEvents } from '$lib/server/helpers/meeting';
 
 import { supabaseAdmin } from '$lib/server/supabaseAdmin';
 import { verifyPinOrThrow } from '$lib/server/auth/pin';
@@ -19,22 +20,10 @@ export const POST = async ({ request, locals }) => {
 
         const client = await getClient();
         const now = new Date();
+        const endOfDay = new Date(now);
+        endOfDay.setHours(23, 59, 59, 999);
 
-        const events = await client
-            .api(`/users/${roomEmail}/calendarView`)
-            .header('Prefer', 'outlook.timezone="W. Europe Standard Time"')
-            .query({
-                startDateTime: now.toISOString(),
-                endDateTime: new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    now.getDate(),
-                    23,
-                    59,
-                    59
-                ).toISOString(),
-            })
-            .get();
+        const events = await getRoomEvents(client, roomEmail, now, endOfDay);
 
         const currentEvent = events.value.find((event: any) => {
             const start = new Date(event.start.dateTime);
@@ -46,7 +35,7 @@ export const POST = async ({ request, locals }) => {
             return new Response('Inget nuvarande möte att avboka', { status: 404 });
         }
 
-        await client.api(`/users/${roomEmail}/events/${currentEvent.id}`).delete();
+        await deleteCalendarEvent(client, roomEmail, currentEvent.id);
 
         // Optional audit
         await supabaseAdmin.from('booking_action_audit').insert({

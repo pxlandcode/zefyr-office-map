@@ -1,0 +1,14 @@
+{
+  "comment": "Verify name & email are unique for each rom and the capacity is reasonable",
+  "url": "/api/rooms/status",
+  "status": 200,
+  "response": {
+    "rooms": [
+      {
+        "capacity": "$between 1 10",
+        "email": "$unique",
+        "name": "$unique"
+      }
+    ]
+  }
+}

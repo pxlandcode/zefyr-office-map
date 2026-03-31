@@ -1,0 +1,7 @@
+{
+	"tests": "api_tests/tests",
+	"base_url": "http://localhost:5173",
+	"file_order": "natural",
+	"match_subsets": true,
+	"brace_expansion": true
+}

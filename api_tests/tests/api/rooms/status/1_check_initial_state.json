@@ -1,0 +1,10 @@
+{
+  "comment": "Verify the number of rooms and that they are all available",
+  "url": "/api/rooms/status",
+  "status": 200,
+  "response": {
+    "rooms": "$len 6",
+    "ongoingMeetings": "$len 0",
+    "upcomingMeetings": "$len 0"
+  }
+}

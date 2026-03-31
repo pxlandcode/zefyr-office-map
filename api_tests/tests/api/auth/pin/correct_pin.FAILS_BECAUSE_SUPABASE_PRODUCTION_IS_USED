@@ -1,0 +1,9 @@
+{
+  "comment": "Correct pin -> 200",
+  "url": "/api/pin/verify",
+  "method": "get",
+  "body": {
+    "pin": 1234
+  },
+  "status": 200
+}
