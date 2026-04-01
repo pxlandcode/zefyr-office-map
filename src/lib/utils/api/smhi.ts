@@ -1,7 +1,6 @@
 import { formatInTimeZone } from 'date-fns-tz';
 
-const SMHI_ENDPOINT =
-    'https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/18.0527/lat/59.3362/data.json';
+const SMHI_ENDPOINT = '/api/weather/smhi';
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -25,19 +24,13 @@ export interface SmhiForecastEntry {
     };
 }
 
-interface SmhiParameter {
-    name: string;
-    unit: string;
-    values: number[];
-}
-
 interface SmhiTimeSeries {
-    validTime: string;
-    parameters: SmhiParameter[];
+    time: string;
+    data: Record<string, number | null | undefined>;
 }
 
 interface SmhiResponse {
-    approvedTime: string;
+    createdTime: string;
     referenceTime: string;
     geometry: {
         type: string;
@@ -52,8 +45,8 @@ type FetchForecastOptions = {
 };
 
 function extractParameter(series: SmhiTimeSeries, name: string) {
-    const param = series.parameters.find((p) => p.name === name);
-    return param?.values?.[0] ?? null;
+    const value = series.data?.[name];
+    return typeof value === 'number' ? value : null;
 }
 
 function getHourInTimeZone(dateIso: string, timeZone: string) {
@@ -80,26 +73,17 @@ export async function fetchSmhiForecast(
     const data = (await response.json()) as SmhiResponse;
 
     const entries: SmhiForecastEntry[] = data.timeSeries.map((series) => ({
-        validTime: series.validTime,
+        validTime: series.time,
         parameters: {
-            t: extractParameter(series, 't'),
-            tcc_mean: extractParameter(series, 'tcc_mean'),
-            pmean: extractParameter(series, 'pmean'),
-            tstm: extractParameter(series, 'tstm'),
-            Wsymb2: extractParameter(series, 'Wsymb2'),
-            ws: extractParameter(series, 'ws'),
-            wd: extractParameter(series, 'wd'),
+            t: extractParameter(series, 'air_temperature'),
+            tcc_mean: extractParameter(series, 'cloud_area_fraction'),
+            pmean: extractParameter(series, 'precipitation_amount'),
+            tstm: extractParameter(series, 'thunder_probability'),
+            Wsymb2: extractParameter(series, 'symbol_code'),
+            ws: extractParameter(series, 'wind_speed'),
+            wd: extractParameter(series, 'wind_from_direction'),
         },
     }));
-
-    const tz = 'Europe/Stockholm';
-    const todayKey = formatInTimeZone(new Date(now), tz, 'yyyy-MM-dd');
-    const tomorrowKey = formatInTimeZone(new Date(now + 24 * 60 * 60 * 1000), tz, 'yyyy-MM-dd');
-
-    const todayAndTomorrowEntries = entries.filter((entry) => {
-        const entryDateKey = formatInTimeZone(new Date(entry.validTime), tz, 'yyyy-MM-dd');
-        return entryDateKey === todayKey || entryDateKey === tomorrowKey;
-    });
 
     cachedForecast = {
         expiresAt: now + CACHE_TTL_MS,

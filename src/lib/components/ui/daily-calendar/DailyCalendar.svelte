@@ -1,9 +1,19 @@
 <script lang="ts">
 	import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import type { CalendarMode, CalendarTransitionVariant } from '$lib/types/calendarTypes';
+	import type {
+		CalendarMeetingSelection,
+		CalendarMode,
+		CalendarSelectionChangeDetail,
+		CalendarSlotSelection,
+		CalendarTransitionVariant
+	} from '$lib/types/calendarTypes';
 	import type { Meeting } from '$lib/types/roomTypes';
 	import { getRoomCalendar } from '$lib/utils/api/api';
+	import {
+		getMeetingIdentity,
+		getValidStartMinutes
+	} from '$lib/utils/helpers/bookingSelectionHelpers';
 	import {
 		addDays,
 		createDateKey,
@@ -40,9 +50,20 @@
 
 	export let roomEmail: string;
 	export let todaysMeetings: Meeting[] = [];
+	export let optimisticMeetings: Meeting[] = [];
+	export let hiddenMeetingIdentities: string[] = [];
+	export let previewMeeting: Meeting | null = null;
+	export let selectedMeetingIdentity: string | null = null;
 
-	const dispatch = createEventDispatcher();
+	const dispatch = createEventDispatcher<{
+		layoutchange: { expanded: boolean };
+		selectionchange: CalendarSelectionChangeDetail;
+		slotselect: CalendarSlotSelection;
+		meetingselect: CalendarMeetingSelection;
+	}>();
 	const dayPickerOptions = { dateFormat: 'yyyy-MM-dd' };
+	const dayModeOption = { value: 'day', label: 'Dag' } as const;
+	const weekModeOption = { value: 'week', label: 'Vecka' } as const;
 	const pendingWeeks = new Set<string>();
 	const todayTravelAnimatedWeekLimit = 6;
 	const todayTravelPreviewWeekLimit = 3;
@@ -148,6 +169,10 @@
 		}
 
 		savedVerticalScrollTop = target.scrollTop;
+	}
+
+	function areMeetingsLoadedForDate(dateKey: string) {
+		return dateKey === todayDateKey || cachedWeeks.has(getWeekKeyForDate(dateKey));
 	}
 
 	async function ensureWeekLoaded(dateKey: string, opts?: { force?: boolean }) {
@@ -372,6 +397,54 @@
 		resetTouchState();
 	}
 
+	function handleDaySlotSelect(
+		event: CustomEvent<{ requestedMinuteOfDay: number; startMinuteOfDay: number }>
+	) {
+		dispatch('slotselect', {
+			dateKey: selectedDateKey,
+			requestedMinuteOfDay: event.detail.requestedMinuteOfDay,
+			startMinuteOfDay: event.detail.startMinuteOfDay,
+			source: 'day'
+		});
+	}
+
+	function handleDayMeetingSelect(event: CustomEvent<Meeting>) {
+		dispatch('meetingselect', {
+			dateKey: selectedDateKey,
+			meeting: event.detail,
+			meetingIdentity: getMeetingIdentity(event.detail),
+			source: 'day'
+		});
+	}
+
+	async function handleWeekSlotSelect(
+		event: CustomEvent<{ dateKey: string; requestedMinuteOfDay: number; startMinuteOfDay: number }>
+	) {
+		const { dateKey, requestedMinuteOfDay, startMinuteOfDay } = event.detail;
+		await focusDay(dateKey);
+
+		dispatch('slotselect', {
+			dateKey,
+			requestedMinuteOfDay,
+			startMinuteOfDay,
+			source: 'week'
+		});
+	}
+
+	async function handleWeekMeetingSelect(
+		event: CustomEvent<{ dateKey: string; meeting: Meeting }>
+	) {
+		const { dateKey, meeting } = event.detail;
+		await focusDay(dateKey);
+
+		dispatch('meetingselect', {
+			dateKey,
+			meeting,
+			meetingIdentity: getMeetingIdentity(meeting),
+			source: 'week'
+		});
+	}
+
 	$: if (roomEmail !== previousRoomEmail) {
 		previousRoomEmail = roomEmail;
 		mode = 'day';
@@ -390,7 +463,7 @@
 	$: selectedWeekStartKey = getWeekKeyForDate(selectedDateKey);
 	$: weekDates = getWeekDates(selectedDate);
 	$: selectedWeekLabel = getSelectedWeekLabel(selectedWeekStartKey);
-	$: selectedModeOption = MODE_OPTIONS.find((option) => option.value === mode) ?? MODE_OPTIONS[0];
+	$: selectedModeOption = mode === 'week' ? weekModeOption : dayModeOption;
 	$: isLoading = loadingCount > 0;
 	$: containerFlyInX = getContainerFlyOffset(transitionVariant);
 	$: containerFlyOutX = -containerFlyInX;
@@ -428,8 +501,30 @@
 		dateKey: selectedDateKey,
 		cachedWeeks,
 		todaysMeetings,
+		optimisticMeetings,
+		hiddenMeetingIdentities,
 		todayDateKey
 	});
+	$: validStartMinutesByDate = Object.fromEntries(
+		visibleDateKeys.map((dateKey) => [
+			dateKey,
+			areMeetingsLoadedForDate(dateKey)
+				? getValidStartMinutes(
+						dateKey,
+						getMeetingsForDate({
+							dateKey,
+							cachedWeeks,
+							todaysMeetings,
+							optimisticMeetings,
+							hiddenMeetingIdentities,
+							todayDateKey
+						}),
+						currentTime
+					)
+				: []
+		])
+	);
+	$: selectedDayValidStartMinutes = validStartMinutesByDate[selectedDateKey] ?? [];
 
 	$: weekColumnWidth = getWeekColumnWidth(weekViewportWidth);
 	$: dayColumns = createDayColumns({
@@ -438,6 +533,8 @@
 		weekColumnWidth,
 		cachedWeeks,
 		todaysMeetings,
+		optimisticMeetings,
+		hiddenMeetingIdentities,
 		todayDateKey
 	});
 
@@ -447,7 +544,9 @@
 	$: dispatch('selectionchange', {
 		dateKey: selectedDateKey,
 		isToday: selectedDateKey === todayDateKey,
-		mode
+		mode,
+		meetings: selectedDayMeetings,
+		meetingsLoaded: areMeetingsLoadedForDate(selectedDateKey)
 	});
 
 	onMount(() => {
@@ -515,9 +614,11 @@
 
 			<div class="min-w-0">
 				{#if mode === 'week'}
-					<p class="truncate text-sm font-semibold text-gray-900">
-						{selectedWeekLabel}
-					</p>
+					<Datepicker
+						bind:value={selectedDateKey}
+						options={dayPickerOptions}
+						buttonLabel={selectedWeekLabel}
+					/>
 				{:else}
 					<Datepicker bind:value={selectedDateKey} options={dayPickerOptions} />
 				{/if}
@@ -560,6 +661,9 @@
 					bind:viewportWidth={dayViewportWidth}
 					{selectedDateKey}
 					meetings={selectedDayMeetings}
+					{previewMeeting}
+					{selectedMeetingIdentity}
+					validStartMinutes={selectedDayValidStartMinutes}
 					hours={HOURS}
 					startHour={START_HOUR}
 					hourHeight={HOUR_HEIGHT}
@@ -573,6 +677,8 @@
 					onTouchMove={handleDayTouchMove}
 					onTouchEnd={handleDayTouchEnd}
 					onTouchCancel={resetTouchState}
+					on:slotselect={handleDaySlotSelect}
+					on:meetingselect={handleDayMeetingSelect}
 				/>
 			{:else}
 				<WeekCalendarView
@@ -583,6 +689,9 @@
 					{selectedWeekStartKey}
 					hours={HOURS}
 					{dayColumns}
+					{previewMeeting}
+					{selectedMeetingIdentity}
+					{validStartMinutesByDate}
 					startHour={START_HOUR}
 					hourHeight={HOUR_HEIGHT}
 					trackHeight={TRACK_HEIGHT}
@@ -595,10 +704,13 @@
 					onHeaderScroll={() => syncWeekScroll('header')}
 					onBodyScroll={() => syncWeekScroll('body')}
 					onFocusDay={focusDay}
+					on:slotselect={handleWeekSlotSelect}
+					on:meetingselect={handleWeekMeetingSelect}
 				/>
 			{/if}
 		</div>
 	{/key}
+
 </div>
 
 <style>

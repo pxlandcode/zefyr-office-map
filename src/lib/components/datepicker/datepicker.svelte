@@ -3,6 +3,7 @@
 	import 'air-datepicker/air-datepicker.css';
 	import './datepicker.css';
 	import localeSv from 'air-datepicker/locale/sv';
+	import { onDestroy } from 'svelte';
 	import { clickOutside } from '$lib/actions/clickOutside';
 	import { ripple, type RippleOptions } from '$lib/actions/ripple';
 
@@ -10,9 +11,10 @@
 		options?: AirDatepickerOptions;
 		value?: string;
 		class?: string;
+		buttonLabel?: string;
 	};
 
-	let { options, value = $bindable(), class: className = '' }: Props = $props();
+	let { options, value = $bindable(), class: className = '', buttonLabel }: Props = $props();
 
 	let datepickerContainer: HTMLDivElement | undefined = $state();
 	let hiddenInput: HTMLInputElement | undefined = $state();
@@ -151,6 +153,7 @@
 
 	// Display value for the button
 	const displayValue = $derived.by(() => {
+		if (buttonLabel !== undefined) return buttonLabel;
 		if (!value) return 'Välj datum';
 		const date = new Date(value);
 		if (isNaN(date.getTime())) return value;
@@ -178,7 +181,6 @@
 					const day = String(selectedDate.getDate()).padStart(2, '0');
 					value = `${year}-${month}-${day}`;
 				}
-				airPicker?.hide();
 			}
 		});
 	}
@@ -187,6 +189,11 @@
 		if (hiddenInput && datepickerContainer) {
 			initAirPicker();
 		}
+	});
+
+	onDestroy(() => {
+		airPicker?.destroy();
+		airPicker = undefined;
 	});
 
 	$effect(() => {
@@ -238,7 +245,9 @@
 	}
 
 	function handleClickOutside() {
-		airPicker?.hide();
+		if (airPicker?.visible) {
+			airPicker.hide();
+		}
 	}
 </script>
 
@@ -248,7 +257,7 @@
 			type="button"
 			use:ripple={triggerRippleOptions}
 			aria-expanded={airPicker?.visible ?? false}
-			class="datepicker-trigger flex h-[48px] items-center justify-center px-4 rounded-lg border border-gray-200 bg-white shadow-sm text-sm font-semibold text-gray-700 whitespace-nowrap"
+			class="datepicker-trigger flex h-[48px] max-w-full items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm"
 			onclick={handleClick}
 		>
 		{displayValue}
@@ -262,6 +271,8 @@
 <style>
 	.datepicker-wrapper {
 		position: relative;
+		display: inline-block;
+		max-width: 100%;
 	}
 	.datepicker-container {
 		position: absolute;

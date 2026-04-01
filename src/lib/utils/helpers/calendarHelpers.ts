@@ -61,6 +61,19 @@ function toDateKeyFromDateTime(dateTime: string | Date) {
     return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
 }
 
+function getMinutesFromDateTime(dateTime: string | Date) {
+    const parts = getDateParts(dateTime);
+    return parts.hours * 60 + parts.minutes;
+}
+
+function createDateTimeFromDateKeyAndMinute(dateKey: string, minuteOfDay: number) {
+    const date = parseDateKey(dateKey);
+    const hours = Math.floor(minuteOfDay / 60);
+    const minutes = minuteOfDay % 60;
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+}
+
 function addDays(date: Date, amount: number) {
     const next = cloneDateAtStartOfDay(date);
     next.setDate(next.getDate() + amount);
@@ -186,12 +199,14 @@ export {
     formatWeekdayShort,
     getTopOffset,
     getMeetingHeight,
+    getMinutesFromDateTime,
     getCurrentTimeOffset,
     getStartOfWeekMonday,
     getWeekDates,
     isSameDay,
     isToday,
     parseDateKey,
+    createDateTimeFromDateKeyAndMinute,
     toDateKeyFromDateTime,
     formatTime,
     formatTimeInHoursAndMinutes,

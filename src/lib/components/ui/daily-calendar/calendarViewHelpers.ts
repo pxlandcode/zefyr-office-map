@@ -14,6 +14,7 @@ import {
     parseDateKey,
     toDateKeyFromDateTime,
 } from '$lib/utils/helpers/calendarHelpers';
+import { getMeetingIdentity, mergeMeetings } from '$lib/utils/helpers/bookingSelectionHelpers';
 
 export const START_HOUR = 0;
 export const TOTAL_HOURS = 24;
@@ -39,6 +40,8 @@ interface GetMeetingsForDateArgs {
     dateKey: string;
     cachedWeeks: WeekCache;
     todaysMeetings: Meeting[];
+    optimisticMeetings?: Meeting[];
+    hiddenMeetingIdentities?: string[];
     todayDateKey: string;
 }
 
@@ -48,6 +51,8 @@ interface CreateDayColumnsArgs {
     weekColumnWidth: number;
     cachedWeeks: WeekCache;
     todaysMeetings: Meeting[];
+    optimisticMeetings?: Meeting[];
+    hiddenMeetingIdentities?: string[];
     todayDateKey: string;
 }
 
@@ -66,19 +71,32 @@ export function getMeetingsForDate({
     dateKey,
     cachedWeeks,
     todaysMeetings,
+    optimisticMeetings = [],
+    hiddenMeetingIdentities = [],
     todayDateKey,
 }: GetMeetingsForDateArgs) {
+    const hiddenMeetingIdentitySet = new Set(hiddenMeetingIdentities);
     const weekMeetings = cachedWeeks.get(getWeekKeyForDate(dateKey));
+    const optimisticDayMeetings = optimisticMeetings.filter(
+        (meeting) => toDateKeyFromDateTime(meeting.startDate) === dateKey
+    );
+    const filterHiddenMeetings = (meetings: Meeting[]) =>
+        meetings.filter((meeting) => !hiddenMeetingIdentitySet.has(getMeetingIdentity(meeting)));
 
     if (weekMeetings) {
-        return weekMeetings.filter((meeting) => toDateKeyFromDateTime(meeting.startDate) === dateKey);
+        return filterHiddenMeetings(
+            mergeMeetings(
+            weekMeetings.filter((meeting) => toDateKeyFromDateTime(meeting.startDate) === dateKey),
+            optimisticDayMeetings
+            )
+        );
     }
 
     if (dateKey === todayDateKey) {
-        return todaysMeetings;
+        return filterHiddenMeetings(mergeMeetings(todaysMeetings, optimisticDayMeetings));
     }
 
-    return [];
+    return filterHiddenMeetings(optimisticDayMeetings);
 }
 
 export function getSelectedWeekLabel(weekStartKey: string) {
@@ -104,6 +122,8 @@ export function createDayColumns({
     weekColumnWidth,
     cachedWeeks,
     todaysMeetings,
+    optimisticMeetings = [],
+    hiddenMeetingIdentities = [],
     todayDateKey,
 }: CreateDayColumnsArgs): CalendarDayColumn[] {
     return dateKeys.map((dateKey, index) => {
@@ -120,6 +140,8 @@ export function createDayColumns({
                 dateKey,
                 cachedWeeks,
                 todaysMeetings,
+                optimisticMeetings,
+                hiddenMeetingIdentities,
                 todayDateKey,
             }),
         };

@@ -1,4 +1,11 @@
 import type { Meeting, MeetingRoom } from '$lib/types/roomTypes';
+import {
+    getCurrentMinuteOfDay,
+    formatMinuteOfDay,
+    getAvailableMinutesAtStart,
+    getNearbyValidStartMinutes,
+} from '$lib/utils/helpers/bookingSelectionHelpers';
+import { createDateKey } from '$lib/utils/helpers/calendarHelpers';
 import { MIN_BOOKING_MINUTES } from '$lib/utils/helpers/bookingHelpers';
 
 export interface BookingSelectOption {
@@ -6,50 +13,36 @@ export interface BookingSelectOption {
     label: string;
 }
 
-const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-});
+export const selectedMeetingCancelHelpText =
+    'För att avboka den här bokningen, kontakta den som bokade rummet.';
 
-export function getStartTimeOptions(minutesUntilNextMeeting: number | null, now = new Date()) {
-    const options: BookingSelectOption[] = [];
-    const maxAvailableMinutes = minutesUntilNextMeeting ?? Number.POSITIVE_INFINITY;
+export function getStartTimeOptions(
+    dateKey: string,
+    selectedStartMinuteOfDay: number | null,
+    meetings: Meeting[],
+    now = new Date()
+) {
+    const currentMinuteOfDay = getCurrentMinuteOfDay(now);
+    const isToday = dateKey === createDateKey(now);
 
-    if (minutesUntilNextMeeting !== null && maxAvailableMinutes < MIN_BOOKING_MINUTES) {
-        return options;
-    }
-
-    options.push({ value: 0, label: 'Nu' });
-
-    const remainder = now.getMinutes() % 15;
-    const firstOffset = remainder === 0 ? 15 : 15 - remainder;
-    const offsets = [firstOffset, firstOffset + 15];
-
-    for (const offset of offsets) {
-        if (offset >= maxAvailableMinutes) continue;
-        if (maxAvailableMinutes - offset < MIN_BOOKING_MINUTES) continue;
-
-        const futureDate = new Date(now.getTime() + offset * 60 * 1000);
-        options.push({ value: offset, label: timeFormatter.format(futureDate) });
-    }
-
-    return options;
+    return getNearbyValidStartMinutes(dateKey, selectedStartMinuteOfDay, meetings, now).map(
+        (minuteOfDay) => ({
+            value: minuteOfDay,
+            label: isToday && minuteOfDay === currentMinuteOfDay ? 'Nu' : formatMinuteOfDay(minuteOfDay),
+        })
+    );
 }
 
 export function getAvailableMinutesForBooking(
-    minutesUntilNextMeeting: number | null,
-    selectedStartOffset: number
+    dateKey: string,
+    meetings: Meeting[],
+    selectedStartMinuteOfDay: number | null,
+    now = new Date()
 ) {
-    const base = minutesUntilNextMeeting ?? 24 * 60;
-    const remaining = base - selectedStartOffset;
-    return remaining >= MIN_BOOKING_MINUTES ? remaining : 0;
+    return getAvailableMinutesAtStart(dateKey, selectedStartMinuteOfDay, meetings, now);
 }
 
-export function getSelectedOption(
-    options: BookingSelectOption[],
-    selectedValue: number
-) {
+export function getSelectedOption(options: BookingSelectOption[], selectedValue: number | null) {
     return options.find((option) => option.value === selectedValue) ?? options[0] ?? null;
 }
 
@@ -70,10 +63,59 @@ export function canBookRoom(
     );
 }
 
+export function canBookSelectedSlot(
+    selectedStartMinuteOfDay: number | null,
+    bookingOptions: BookingSelectOption[]
+) {
+    return selectedStartMinuteOfDay != null && bookingOptions.length > 0;
+}
+
 export function canExtendRoom(room: MeetingRoom | null, selectedExtendOption: number) {
     return (
         room?.currentMeetingEndsIn != null &&
         room.currentMeetingEndsIn <= 15 &&
         selectedExtendOption <= (room.minutesUntilNextMeeting ?? 24 * 60)
     );
+}
+
+export function canCancelSelectedMeeting(
+    selectedMeeting: Meeting | null,
+    selectedDateKey: string,
+    now = new Date()
+) {
+    if (!selectedMeeting?.id) {
+        return false;
+    }
+
+    const meetingEnd = new Date(selectedMeeting.endDate);
+    if (meetingEnd <= now) {
+        return false;
+    }
+
+    if (selectedDateKey === createDateKey(now)) {
+        return true;
+    }
+
+    return Boolean(selectedMeeting.isPanelBooking);
+}
+
+export function getSelectedMeetingCancelMessage(
+    selectedMeeting: Meeting | null,
+    selectedDateKey: string,
+    now = new Date()
+) {
+    if (!selectedMeeting) {
+        return null;
+    }
+
+    const meetingStart = new Date(selectedMeeting.startDate);
+    const meetingEnd = new Date(selectedMeeting.endDate);
+
+    if (meetingEnd <= now || selectedDateKey === createDateKey(now)) {
+        return null;
+    }
+
+    return meetingStart > now && !selectedMeeting.isPanelBooking
+        ? selectedMeetingCancelHelpText
+        : null;
 }

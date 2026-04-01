@@ -4,6 +4,7 @@ type Props = {
     options?: AirDatepickerOptions;
     value?: string;
     class?: string;
+    buttonLabel?: string;
 };
 
 declare const Datepicker: import("svelte").Component<Props, {}, "value">;

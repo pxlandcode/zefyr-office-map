@@ -2,6 +2,7 @@ import type { Meeting } from './roomTypes';
 
 export type CalendarMode = 'day' | 'week';
 export type CalendarTransitionVariant = 'expand' | 'collapse' | 'forward' | 'backward';
+export type CalendarSelectionSource = 'day' | 'week';
 
 export interface CalendarModeOption {
     value: CalendarMode;
@@ -22,4 +23,26 @@ export interface RoomCalendarResponse {
     startDate: string;
     endDate: string;
     meetings: Meeting[];
+}
+
+export interface CalendarSelectionChangeDetail {
+    dateKey: string;
+    isToday: boolean;
+    mode: CalendarMode;
+    meetings: Meeting[];
+    meetingsLoaded: boolean;
+}
+
+export interface CalendarSlotSelection {
+    dateKey: string;
+    requestedMinuteOfDay: number;
+    startMinuteOfDay: number;
+    source: CalendarSelectionSource;
+}
+
+export interface CalendarMeetingSelection {
+    dateKey: string;
+    meeting: Meeting;
+    meetingIdentity: string;
+    source: CalendarSelectionSource;
 }
