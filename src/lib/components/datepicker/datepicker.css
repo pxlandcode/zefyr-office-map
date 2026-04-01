@@ -1,0 +1,171 @@
+/* Air Datepicker theme customization for zefyr-office-map */
+.air-datepicker {
+	--adp-font-family: 'Hahmlet', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+	--adp-font-size: 13px;
+	--adp-width: 260px;
+	--adp-z-index: 200;
+	--adp-padding: 12px;
+	--adp-grid-areas: 'nav' 'body' 'timepicker' 'buttons';
+	--adp-transition-duration: 0.15s;
+	--adp-transition-ease: ease-out;
+	--adp-transition-offset: 4px;
+	
+	/* Colors - using project colors */
+	--adp-background-color: #ffffff;
+	--adp-background-color-hover: #F9F9F9;
+	--adp-background-color-active: #e5e5e5;
+	--adp-background-color-in-range: rgba(51, 199, 89, 0.1);
+	--adp-background-color-in-range-focused: rgba(51, 199, 89, 0.2);
+	--adp-background-color-selected-other-month-focused: #33c759;
+	--adp-background-color-selected-other-month: #4ade80;
+	
+	--adp-color: #363636;
+	--adp-color-secondary: #6b7280;
+	--adp-accent-color: #33c759;
+	--adp-color-current-date: #33c759;
+	--adp-color-other-month: #d1d5db;
+	--adp-color-disabled: #e5e7eb;
+	--adp-color-disabled-in-range: #9ca3af;
+	--adp-color-other-month-hover: #9ca3af;
+	
+	--adp-border-color: #e5e7eb;
+	--adp-border-color-inner: #f3f4f6;
+	--adp-border-radius: 12px;
+	--adp-border-color-inline: #e5e7eb;
+	
+	/* Navigation */
+	--adp-nav-height: 40px;
+	--adp-nav-arrow-color: #6b7280;
+	--adp-nav-action-size: 32px;
+	--adp-nav-color-secondary: #6b7280;
+	
+	/* Day names */
+	--adp-day-name-color: #29793D;
+	--adp-day-name-color-hover: #29793D;
+	
+	/* Cell dimensions */
+	--adp-day-cell-width: 1fr;
+	--adp-day-cell-height: 32px;
+	--adp-month-cell-height: 40px;
+	--adp-year-cell-height: 52px;
+	
+	/* Pointer (arrow) - disabled */
+	--adp-pointer-size: 0;
+	--adp-poiner-border-radius: 2px;
+	--adp-pointer-offset: 14px;
+	
+	/* Cells */
+	--adp-cell-border-radius: 8px;
+	--adp-cell-background-color-hover: #F9F9F9;
+	--adp-cell-background-color-selected: #33c759;
+	--adp-cell-background-color-selected-hover: #29793D;
+	--adp-cell-background-color-in-range: rgba(51, 199, 89, 0.1);
+	--adp-cell-background-color-in-range-hover: rgba(51, 199, 89, 0.2);
+	--adp-cell-border-color-in-range: #33c759;
+	
+	/* Buttons */
+	--adp-btn-height: 32px;
+	--adp-btn-color: #33c759;
+	--adp-btn-color-hover: #363636;
+	--adp-btn-border-radius: 8px;
+	--adp-btn-background-color-hover: #F9F9F9;
+	--adp-btn-background-color-active: #e5e5e5;
+	
+	/* Time picker */
+	--adp-time-track-height: 2px;
+	--adp-time-track-color: #e5e7eb;
+	--adp-time-track-color-hover: #9ca3af;
+	--adp-time-thumb-size: 14px;
+	--adp-time-padding-inner: 12px;
+	--adp-time-day-period-color: #6b7280;
+	
+	/* Mobile */
+	--adp-mobile-font-size: 16px;
+	--adp-mobile-nav-height: 48px;
+	--adp-mobile-width: 300px;
+	--adp-mobile-day-cell-height: 40px;
+	--adp-mobile-month-cell-height: 48px;
+	--adp-mobile-year-cell-height: 64px;
+	
+	/* Box shadow for floating picker */
+	box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+	border: none;
+}
+
+/* Overlay for mobile */
+.air-datepicker-overlay {
+	--adp-overlay-background-color: rgba(0, 0, 0, 0.5);
+	--adp-overlay-transition-duration: 0.2s;
+	--adp-overlay-transition-ease: ease-out;
+	--adp-overlay-z-index: 199;
+}
+
+/* Selected date text should be white */
+.air-datepicker-cell.-selected- {
+	color: #ffffff;
+	font-weight: 600;
+}
+
+/* Today's date styling */
+.air-datepicker-cell.-current- {
+	font-weight: 700;
+}
+
+.air-datepicker-cell.-current-.-selected- {
+	color: #ffffff;
+}
+
+/* Navigation buttons hover */
+.air-datepicker-nav--action {
+	border-radius: 8px;
+	transition: background-color 0.15s ease;
+}
+
+.air-datepicker-nav--action:hover {
+	background-color: #F9F9F9;
+}
+
+/* Navigation title styling */
+.air-datepicker-nav--title {
+	font-weight: 600;
+	font-size: 14px;
+	color: #363636;
+}
+
+.air-datepicker-nav--title:hover {
+	background-color: #F9F9F9;
+	border-radius: 8px;
+}
+
+/* Day names styling */
+.air-datepicker-body--day-names {
+	margin-bottom: 8px;
+}
+
+.air-datepicker-body--day-name {
+	font-weight: 600;
+	text-transform: uppercase;
+	font-size: 10px;
+	letter-spacing: 0.5px;
+	color: #29793D;
+}
+
+/* Day cells */
+.air-datepicker-cell.-day- {
+	font-weight: 500;
+	transition: all 0.15s ease;
+}
+
+.air-datepicker-cell.-day-:hover {
+	border-radius: 8px;
+}
+
+/* Other month days */
+.air-datepicker-cell.-other-month- {
+	opacity: 0.4;
+}
+
+/* Focus state */
+.air-datepicker-cell.-focus- {
+	background-color: #F9F9F9;
+}

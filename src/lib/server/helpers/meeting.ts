@@ -4,7 +4,8 @@ export async function getRoomEvents(
     startDate: Date,
     endDate: Date
 ) {
-    return await client
+    const events = [] as any[];
+    let response = await client
         .api(`/users/${roomEmail}/calendarView`)
         .header('Prefer', 'outlook.timezone="W. Europe Standard Time"')
         .query({
@@ -12,6 +13,41 @@ export async function getRoomEvents(
             endDateTime: endDate.toISOString(),
         })
         .get();
+
+    events.push(...(response?.value ?? []));
+
+    while (response?.['@odata.nextLink']) {
+        response = await client
+            .api(response['@odata.nextLink'])
+            .header('Prefer', 'outlook.timezone="W. Europe Standard Time"')
+            .get();
+        events.push(...(response?.value ?? []));
+    }
+
+    return { value: events };
+}
+
+export function normalizeCalendarEvents(events: any) {
+    return (events?.value ?? [])
+        .map((event: any) => {
+            const organizerName = event.organizer?.emailAddress?.name ?? 'Okänd';
+            const isPanelBooking = Boolean(event.categories?.includes('PanelBooking'));
+            const panelBooker = isPanelBooking ? extractPanelBookingName(event) : null;
+            const displayOrganizer = isPanelBooking
+                ? (panelBooker ?? 'Bokat på panel')
+                : organizerName;
+
+            return {
+                id: event.id,
+                startDate: event.start.dateTime,
+                endDate: event.end.dateTime,
+                organizer: displayOrganizer,
+            };
+        })
+        .sort(
+            (left: { startDate: string }, right: { startDate: string }) =>
+                new Date(left.startDate).getTime() - new Date(right.startDate).getTime()
+        );
 }
 
 export function processMeetingStatus(events: any, now: Date) {
@@ -20,34 +56,24 @@ export function processMeetingStatus(events: any, now: Date) {
     let nextMeeting: string | null = null;
     let currentMeetingOrganizer: string | null = null;
     let nextMeetingOrganizer: string | null = null;
-    const todaysMeetings: any[] = [];
+    const todaysMeetings = normalizeCalendarEvents(events);
 
-    events.value.forEach((event: any) => {
-        const start = new Date(event.start.dateTime);
-        const end = new Date(event.end.dateTime);
-        const organizerName = event.organizer?.emailAddress?.name ?? 'Okänd';
-        const isPanelBooking = Boolean(event.categories?.includes('PanelBooking'));
-        const panelBooker = isPanelBooking ? extractPanelBookingName(event) : null;
-        const displayOrganizer = isPanelBooking ? (panelBooker ?? 'Bokat på panel') : organizerName;
-
+    todaysMeetings.forEach((event: any) => {
+        const start = new Date(event.startDate);
+        const end = new Date(event.endDate);
         if (now >= start && now < end) {
             status = 'Upptagen';
             currentMeeting = {
-                startDate: event.start.dateTime,
-                endDate: event.end.dateTime,
-                organizer: displayOrganizer,
+                id: event.id,
+                startDate: event.startDate,
+                endDate: event.endDate,
+                organizer: event.organizer,
             };
             currentMeetingOrganizer = currentMeeting.organizer;
         }
-
-        todaysMeetings.push({
-            startDate: event.start.dateTime,
-            endDate: event.end.dateTime,
-            organizer: displayOrganizer,
-        });
     });
 
-    const upcoming = todaysMeetings.filter((m) => new Date(m.startDate) > now);
+    const upcoming = todaysMeetings.filter((m: { startDate: string }) => new Date(m.startDate) > now);
     if (upcoming.length > 0) {
         nextMeeting = upcoming[0].startDate;
         nextMeetingOrganizer = upcoming[0].organizer;

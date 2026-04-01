@@ -1,239 +1,174 @@
 <script lang="ts">
-    import type { MeetingRoom } from '$lib/types/roomTypes';
-    import { createEventDispatcher } from 'svelte';
-    import Button from '../ui/button/Button.svelte';
-    import DailyCalendar from '../ui/daily-calendar/DailyCalendar.svelte';
-    import Tag from '../ui/tag/Tag.svelte';
-    import Icon from '../ui/icon-component/Icon.svelte';
-    import HourglassIcon from '../ui/hourglass-icon/HourglassIcon.svelte';
+	import type { MeetingRoom } from '$lib/types/roomTypes';
+	import { createEventDispatcher } from 'svelte';
+	import DailyCalendar from '../ui/daily-calendar/DailyCalendar.svelte';
+	import {
+		generateTimeBookingOptions,
+		handleBooking,
+		handleCancel,
+		handleExtend,
+		MIN_BOOKING_MINUTES
+	} from '$lib/utils/helpers/bookingHelpers';
+	import {
+		createDateKey,
+		formatSelectedDayLabel,
+		parseDateKey
+	} from '$lib/utils/helpers/calendarHelpers';
+	import RoomBookingSidebar from './room-booking/RoomBookingSidebar.svelte';
+	import {
+		type BookingSelectOption,
+		canBookRoom,
+		canExtendRoom,
+		getAvailableMinutesForBooking,
+		getNextMeeting,
+		getSelectedOption,
+		getStartTimeOptions
+	} from './room-booking/roomBookingHelpers';
 
-    import {
-        generateTimeBookingOptions,
-        handleBooking,
-        handleCancel,
-        handleExtend,
-        MIN_BOOKING_MINUTES,
-    } from '$lib/utils/helpers/bookingHelpers';
-    import { formatTimeInHoursAndMinutes } from '$lib/utils/helpers/calendarHelpers';
-    import OptionsButton from '../ui/options-button/OptionsButton.svelte';
+	export let room: MeetingRoom | null = null;
+	export let extraClasses: string = '';
 
-    export let room: MeetingRoom | null = null;
-    export let extraClasses: string = '';
+	const dispatch = createEventDispatcher();
 
-    const dispatch = createEventDispatcher();
+	let selectedBookingOption: number = 30;
+	let selectedExtendOption: number = 30;
+	let selectedStartOffset: number = 0;
 
-    const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-    });
+	let previousExtendMaxTime: number | null = null;
+	let previousRemainingTime: number | null = null;
+	let calendarExpanded = false;
+	let selectedCalendarDateKey = createDateKey(new Date());
+	let previousRoomEmail: string | null = null;
 
-    let selectedBookingOption: number = 30;
-    let selectedExtendOption: number = 30;
-    let selectedStartOffset: number = 0;
+	let bookingOptions: BookingSelectOption[] = generateTimeBookingOptions(24 * 60);
+	let extendOptions: BookingSelectOption[] = generateTimeBookingOptions(24 * 60);
+	let startTimeOptions: BookingSelectOption[] = [{ value: 0, label: 'Nu' }];
 
-    let previousExtendMaxTime: number | null = null;
-    let previousRemainingTime: number | null = null;
+	$: minutesUntilNextMeeting = room?.minutesUntilNextMeeting ?? null;
+	$: startTimeOptions = getStartTimeOptions(minutesUntilNextMeeting);
 
-    let bookingOptions = generateTimeBookingOptions(24 * 60);
-    let extendOptions = generateTimeBookingOptions(24 * 60);
-    let startTimeOptions: Array<{ value: number; label: string }> = [{ value: 0, label: 'Nu' }];
+	$: if (!startTimeOptions.find((option) => option.value === selectedStartOffset)) {
+		selectedStartOffset = startTimeOptions[0]?.value ?? 0;
+	}
 
-    $: minutesUntilNextMeeting = room?.minutesUntilNextMeeting ?? null;
+	$: availableMinutesForBooking = getAvailableMinutesForBooking(
+		minutesUntilNextMeeting,
+		selectedStartOffset
+	);
 
-    $: startTimeOptions = (() => {
-        const now = new Date();
-        const options: Array<{ value: number; label: string }> = [];
-        const base = minutesUntilNextMeeting ?? Number.POSITIVE_INFINITY;
+	$: bookingOptions = generateTimeBookingOptions(
+		availableMinutesForBooking,
+		null,
+		minutesUntilNextMeeting != null &&
+			minutesUntilNextMeeting - selectedStartOffset >= MIN_BOOKING_MINUTES
+			? minutesUntilNextMeeting - selectedStartOffset
+			: null
+	);
 
-        if (minutesUntilNextMeeting !== null && base < MIN_BOOKING_MINUTES) {
-            return options;
-        }
+	$: if (!bookingOptions.find((option) => option.value === selectedBookingOption)) {
+		selectedBookingOption = bookingOptions[0]?.value ?? 0;
+	}
 
-        options.push({ value: 0, label: 'Nu' });
+	$: selectedBookingOptionItem = getSelectedOption(bookingOptions, selectedBookingOption);
+	$: selectedStartOption = getSelectedOption(startTimeOptions, selectedStartOffset);
 
-        const remainder = now.getMinutes() % 15;
-        const firstOffset = remainder === 0 ? 15 : 15 - remainder;
-        const offsets = [firstOffset, firstOffset + 15];
+	$: if (
+		room &&
+		(room?.minutesUntilNextMeeting !== previousExtendMaxTime ||
+			room?.currentMeetingEndsIn !== previousRemainingTime)
+	) {
+		previousExtendMaxTime = room?.minutesUntilNextMeeting;
+		previousRemainingTime = room?.currentMeetingEndsIn;
+		extendOptions = generateTimeBookingOptions(
+			previousExtendMaxTime ?? 24 * 60,
+			previousRemainingTime ?? null,
+			room?.minutesUntilNextMeeting
+		);
+	}
 
-        for (const offset of offsets) {
-            if (offset >= base) continue;
-            if (base - offset < MIN_BOOKING_MINUTES) continue;
-            const futureDate = new Date(now.getTime() + offset * 60 * 1000);
-            options.push({ value: offset, label: timeFormatter.format(futureDate) });
-        }
+	$: if (!extendOptions.find((option) => option.value === selectedExtendOption)) {
+		selectedExtendOption = extendOptions[0]?.value ?? 0;
+	}
 
-        return options;
-    })();
+	$: selectedExtendOptionItem = getSelectedOption(extendOptions, selectedExtendOption);
+	$: nextMeeting = getNextMeeting(room?.todaysMeetings ?? []);
+	$: isViewingToday = selectedCalendarDateKey === createDateKey(new Date());
+	$: selectedCalendarLabel = formatSelectedDayLabel(parseDateKey(selectedCalendarDateKey));
+	$: showNextMeetingSummary = Boolean(room?.minutesUntilNextMeeting && nextMeeting);
+	$: canBook = canBookRoom(room, startTimeOptions, bookingOptions);
+	$: canExtend = canExtendRoom(room, selectedExtendOption);
 
-    $: if (!startTimeOptions.find((option) => option.value === selectedStartOffset)) {
-        selectedStartOffset = startTimeOptions[0]?.value ?? 0;
-    }
+	function handleCalendarLayoutChange(event: CustomEvent<{ expanded: boolean }>) {
+		calendarExpanded = Boolean(event.detail?.expanded);
+		dispatch('calendarLayoutChange', event.detail);
+	}
 
-    $: availableMinutesForBooking = (() => {
-        const base = minutesUntilNextMeeting ?? 24 * 60;
-        const remaining = base - selectedStartOffset;
-        return remaining >= MIN_BOOKING_MINUTES ? remaining : 0;
-    })();
+	function handleCalendarSelectionChange(
+		event: CustomEvent<{ dateKey?: string; isToday?: boolean }>
+	) {
+		selectedCalendarDateKey = event.detail?.dateKey ?? createDateKey(new Date());
+	}
 
-    $: bookingOptions = generateTimeBookingOptions(
-        availableMinutesForBooking,
-        null,
-        minutesUntilNextMeeting != null &&
-            minutesUntilNextMeeting - selectedStartOffset >= MIN_BOOKING_MINUTES
-            ? minutesUntilNextMeeting - selectedStartOffset
-            : null
-    );
+	$: if (room?.email !== previousRoomEmail) {
+		previousRoomEmail = room?.email ?? null;
+		selectedCalendarDateKey = createDateKey(new Date());
+	}
 
-    $: if (!bookingOptions.find((option) => option.value === selectedBookingOption)) {
-        selectedBookingOption = bookingOptions[0]?.value ?? 0;
-    }
+	function handleBook() {
+		if (!room) return;
+		return handleBooking(room, selectedBookingOption, selectedStartOffset, dispatch);
+	}
 
-    $: selectedBookingOptionItem = bookingOptions.find(
-        (option) => option.value === selectedBookingOption
-    );
+	function handleExtendBooking() {
+		if (!room) return;
+		return handleExtend(room, selectedExtendOption, dispatch);
+	}
 
-    $: selectedStartOption = startTimeOptions.find(
-        (option) => option.value === selectedStartOffset
-    );
-
-    $: if (
-        room &&
-        (room?.minutesUntilNextMeeting !== previousExtendMaxTime ||
-            room?.currentMeetingEndsIn !== previousRemainingTime)
-    ) {
-        previousExtendMaxTime = room?.minutesUntilNextMeeting;
-        previousRemainingTime = room?.currentMeetingEndsIn;
-        extendOptions = generateTimeBookingOptions(
-            previousExtendMaxTime ?? 24 * 60,
-            previousRemainingTime ?? null,
-            room?.minutesUntilNextMeeting
-        );
-    }
-    $: nextMeeting = room?.todaysMeetings?.find(
-        (meeting) => new Date(meeting.startDate) > new Date()
-    );
-
-    $: canBook =
-        (room?.minutesUntilNextMeeting == null ||
-            room?.minutesUntilNextMeeting >= MIN_BOOKING_MINUTES) &&
-        startTimeOptions.length > 0 &&
-        bookingOptions.length > 0;
-
-    $: canExtend =
-        room?.currentMeetingEndsIn != null &&
-        room.currentMeetingEndsIn <= 15 &&
-        selectedExtendOption <= (room.minutesUntilNextMeeting ?? 24 * 60);
-
-    $: classString = `${extraClasses}`;
+	function handleCancelBooking() {
+		if (!room) return;
+		return handleCancel(room, dispatch);
+	}
 </script>
 
 {#if room}
-    <div class="wrapper gap-4 text-text">
-        <div class="flex flex-row {extraClasses} gap-4">
-            <div class="flex flex-col gap-4 w-[400px]">
-                {#if room.status === 'Upptagen'}
-                    <Tag color="red" text={room.status}></Tag>
-                {:else}
-                    <div class="flex flex-row justify-between items-center">
-                        <Tag color="green" text={room.status}></Tag>
-                        {#if room.minutesUntilNextMeeting && nextMeeting}
-                            <p class="text-sm text-gray-500">
-                                {formatTimeInHoursAndMinutes(room.minutesUntilNextMeeting)} till nästa
-                                möte
-                            </p>
-                        {:else}
-                            <p class="text-sm text-gray-500">Tillgänglig resten av dagen</p>
-                        {/if}
-                    </div>
-                {/if}
+	<div class="wrapper gap-4 text-text">
+		<div class={`flex min-h-0 flex-row gap-4 ${extraClasses}`}>
+			<RoomBookingSidebar
+				{room}
+				expanded={calendarExpanded}
+				{isViewingToday}
+				{selectedCalendarLabel}
+				{showNextMeetingSummary}
+				{canBook}
+				{canExtend}
+				{startTimeOptions}
+				{bookingOptions}
+				{extendOptions}
+				selectedStartOption={selectedStartOption}
+				selectedBookingOption={selectedBookingOptionItem}
+				selectedExtendOption={selectedExtendOptionItem}
+				on:startoffsetchange={(event) => (selectedStartOffset = event.detail)}
+				on:bookingoptionchange={(event) => (selectedBookingOption = event.detail)}
+				on:extendoptionchange={(event) => (selectedExtendOption = event.detail)}
+				on:book={handleBook}
+				on:extend={handleExtendBooking}
+				on:cancel={handleCancelBooking}
+			/>
 
-                {#if room.status === 'Upptagen'}
-                    <div class="flex items-center gap-1">
-                        <Icon icon="Person" size="14px" />
-                        <p><strong>Mötesbokare:</strong> {room.currentMeetingOrganizer}</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <HourglassIcon size="14px" minutes={room.currentMeetingEndsIn} />
-                        <p><strong>Klart om:</strong> {room.currentMeetingEndsIn} minuter</p>
-                    </div>
-
-                    <div class="mt-auto space-y-4">
-                        {#if canExtend}
-                            <div class="flex flex-col gap-2">
-                                <label for="bookingTime" class="text-sm text-gray-600 font-medium">
-                                    Välj bokningstid:
-                                </label>
-
-                                <OptionsButton
-                                    options={bookingOptions}
-                                    selectedOption={selectedBookingOptionItem ?? bookingOptions[0]}
-                                    on:select={(e) => (selectedBookingOption = e.detail)}
-                                    type="secondary"
-                                />
-                            </div>
-                            <Button
-                                type="secondary"
-                                fullWidth
-                                on:click={() => handleExtend(room, selectedExtendOption, dispatch)}
-                                >Förläng</Button
-                            >
-                        {/if}
-                        <Button
-                            type="cancel"
-                            fullWidth
-                            on:click={() => handleCancel(room, dispatch)}>Avboka</Button
-                        >
-                    </div>
-                {/if}
-
-                {#if room.status === 'Ledig'}
-                    {#if canBook}
-                        <div class="flex flex-col gap-2 mt-auto">
-                            <label for="startTime" class="text-sm text-gray-600 font-medium">
-                                Välj starttid:
-                            </label>
-
-                            <OptionsButton
-                                options={startTimeOptions}
-                                selectedOption={selectedStartOption ?? startTimeOptions[0]}
-                                on:select={(e) => (selectedStartOffset = e.detail)}
-                            />
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-                            <label for="bookingTime" class="text-sm text-gray-600 font-medium">
-                                Välj bokningstid:
-                            </label>
-
-                            <OptionsButton
-                                options={bookingOptions}
-                                selectedOption={selectedBookingOptionItem ?? bookingOptions[0]}
-                                on:select={(e) => (selectedBookingOption = e.detail)}
-                            />
-                        </div>
-
-                        <Button
-                            type="primary"
-                            fullWidth
-                            on:click={() =>
-                                handleBooking(
-                                    room,
-                                    selectedBookingOption,
-                                    selectedStartOffset,
-                                    dispatch
-                                )}
-                            >Boka</Button
-                        >
-                    {/if}
-                {/if}
-            </div>
-
-            {#if room.todaysMeetings && room.todaysMeetings.length > 0}
-                <div class="w-[400px]">
-                    <DailyCalendar meetings={room.todaysMeetings}></DailyCalendar>
-                </div>
-            {/if}
-        </div>
-    </div>
+			<div
+				class={`min-h-0 min-w-0 flex-1 transition-[max-width] duration-300 ease-out ${
+					calendarExpanded ? 'max-w-none' : 'max-w-[400px]'
+				}`}
+			>
+				{#key room.email}
+					<DailyCalendar
+						roomEmail={room.email}
+						todaysMeetings={room.todaysMeetings ?? []}
+						on:layoutchange={handleCalendarLayoutChange}
+						on:selectionchange={handleCalendarSelectionChange}
+					/>
+				{/key}
+			</div>
+		</div>
+	</div>
 {/if}

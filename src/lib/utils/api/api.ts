@@ -1,3 +1,5 @@
+import type { RoomCalendarResponse } from '$lib/types/calendarTypes';
+
 type FetchLike = typeof fetch;
 
 function jsonOrText(res: Response) {
@@ -20,6 +22,19 @@ export async function getRoomStatus(fetcher: FetchLike = fetch) {
         upcomingMeetings: any[];
         errors?: { room: string; error: string }[];
     }>;
+}
+
+// GET /api/rooms/calendar
+export async function getRoomCalendar(
+    roomEmail: string,
+    startDate: string,
+    endDate: string,
+    fetcher: FetchLike = fetch
+) {
+    const params = new URLSearchParams({ roomEmail, startDate, endDate });
+    const res = await fetcher(`/api/rooms/calendar?${params.toString()}`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json() as Promise<RoomCalendarResponse>;
 }
 
 // POST /api/rooms/book
