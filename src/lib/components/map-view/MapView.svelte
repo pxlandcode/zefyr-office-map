@@ -13,8 +13,9 @@
     export let ongoingMeetings: Meeting[] = [];
     export let upcomingMeetings: Meeting[] = [];
 
-    let pollingInterval: ReturnType<typeof setInterval> | null = null;
+    let pollingTimeout: ReturnType<typeof setTimeout> | null = null;
     const isBrowser = typeof window !== 'undefined';
+    const POLL_INTERVAL_MS = 1000;
 
     async function fetchRooms() {
         try {
@@ -34,16 +35,24 @@
         }
     }
 
+    async function pollLoop() {
+        await fetchRooms();
+        pollingTimeout = setTimeout(pollLoop, POLL_INTERVAL_MS);
+    }
+
     function startPolling(immediate = false) {
         stopPolling();
-        if (immediate) fetchRooms();
-        pollingInterval = setInterval(fetchRooms, 5000);
+        if (immediate) {
+            pollLoop();
+        } else {
+            pollingTimeout = setTimeout(pollLoop, POLL_INTERVAL_MS);
+        }
     }
 
     function stopPolling() {
-        if (pollingInterval) {
-            clearInterval(pollingInterval);
-            pollingInterval = null;
+        if (pollingTimeout) {
+            clearTimeout(pollingTimeout);
+            pollingTimeout = null;
         }
     }
 
