@@ -1,239 +1,486 @@
 <script lang="ts">
-    import type { MeetingRoom } from '$lib/types/roomTypes';
-    import { createEventDispatcher } from 'svelte';
-    import Button from '../ui/button/Button.svelte';
-    import DailyCalendar from '../ui/daily-calendar/DailyCalendar.svelte';
-    import Tag from '../ui/tag/Tag.svelte';
-    import Icon from '../ui/icon-component/Icon.svelte';
-    import HourglassIcon from '../ui/hourglass-icon/HourglassIcon.svelte';
+	import type {
+		CalendarMeetingSelection,
+		CalendarSelectionChangeDetail,
+		CalendarSlotSelection
+	} from '$lib/types/calendarTypes';
+	import type { Meeting, MeetingRoom } from '$lib/types/roomTypes';
+	import { createEventDispatcher } from 'svelte';
+	import DailyCalendar from '../ui/daily-calendar/DailyCalendar.svelte';
+	import {
+		generateTimeBookingOptions,
+		handleBooking,
+		handleCancel,
+		handleExtend
+	} from '$lib/utils/helpers/bookingHelpers';
+	import {
+		createDateKey,
+		formatSelectedDayLabel,
+		getMinutesFromDateTime,
+		parseDateKey
+	} from '$lib/utils/helpers/calendarHelpers';
+	import {
+		createMeetingFromSelection,
+		getCurrentMinuteOfDay,
+		getMeetingByIdentity,
+		getMeetingIdentity,
+		getValidStartMinutes,
+		mergeMeetings
+	} from '$lib/utils/helpers/bookingSelectionHelpers';
+	import RoomBookingSidebar from './room-booking/RoomBookingSidebar.svelte';
+	import {
+		type BookingSelectOption,
+		canBookSelectedSlot,
+		canCancelSelectedMeeting as canCancelSelectedMeetingInSidebar,
+		canExtendRoom,
+		getAvailableMinutesForBooking,
+		getNextMeeting,
+		getSelectedMeetingCancelMessage,
+		getSelectedOption,
+		getStartTimeOptions
+	} from './room-booking/roomBookingHelpers';
 
-    import {
-        generateTimeBookingOptions,
-        handleBooking,
-        handleCancel,
-        handleExtend,
-        MIN_BOOKING_MINUTES,
-    } from '$lib/utils/helpers/bookingHelpers';
-    import { formatTimeInHoursAndMinutes } from '$lib/utils/helpers/calendarHelpers';
-    import OptionsButton from '../ui/options-button/OptionsButton.svelte';
+	export let room: MeetingRoom | null = null;
+	export let extraClasses = '';
 
-    export let room: MeetingRoom | null = null;
-    export let extraClasses: string = '';
+	type RoomBookingSidebarState =
+		| 'defaultTodayStatus'
+		| 'emptySelectedDay'
+		| 'freeSlotSelected'
+		| 'meetingSelected';
 
-    const dispatch = createEventDispatcher();
+	const dispatch = createEventDispatcher();
 
-    const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-    });
+	let selectedBookingOption = 30;
+	let selectedExtendOption = 30;
+	let selectedStartMinuteOfDay: number | null = null;
+	let startOptionsAnchorMinuteOfDay: number | null = null;
+	let previousExtendMaxTime: number | null = null;
+	let previousRemainingTime: number | null = null;
+	let calendarExpanded = false;
+	let selectedCalendarDateKey = createDateKey(new Date());
+	let selectedCalendarMeetings: Meeting[] = [];
+	let selectedCalendarMeetingsLoaded = true;
+	let selectedMeetingIdentity: string | null = null;
+	let selectedMeetingFallback: Meeting | null = null;
+	let previousRoomEmail: string | null = null;
+	let optimisticMeetings: Meeting[] = [];
+	let hiddenMeetingIdentities: string[] = [];
+	let showPreviewMeeting = false;
 
-    let selectedBookingOption: number = 30;
-    let selectedExtendOption: number = 30;
-    let selectedStartOffset: number = 0;
+	let bookingOptions: BookingSelectOption[] = generateTimeBookingOptions(24 * 60);
+	let extendOptions: BookingSelectOption[] = generateTimeBookingOptions(24 * 60);
+	let startTimeOptions: BookingSelectOption[] = [];
 
-    let previousExtendMaxTime: number | null = null;
-    let previousRemainingTime: number | null = null;
+	$: selectedDayValidStartMinutes =
+		selectedCalendarMeetingsLoaded
+			? getValidStartMinutes(selectedCalendarDateKey, selectedCalendarMeetings)
+			: [];
+	$: immediateTodayStartMinuteOfDay =
+		selectedCalendarDateKey === createDateKey(new Date())
+			? getCurrentMinuteOfDay()
+			: null;
+	$: selectedStartAllowedMinutes =
+		immediateTodayStartMinuteOfDay != null &&
+		getAvailableMinutesForBooking(
+			selectedCalendarDateKey,
+			selectedCalendarMeetings,
+			immediateTodayStartMinuteOfDay
+		) > 0
+			? Array.from(
+					new Set([immediateTodayStartMinuteOfDay, ...selectedDayValidStartMinutes])
+				)
+			: selectedDayValidStartMinutes;
+	$: availableMinutesForBooking = getAvailableMinutesForBooking(
+		selectedCalendarDateKey,
+		selectedCalendarMeetings,
+		selectedStartMinuteOfDay
+	);
+	$: startOptionsCenterMinuteOfDay =
+		startOptionsAnchorMinuteOfDay ?? selectedStartMinuteOfDay;
+	$: startTimeOptions = selectedCalendarMeetingsLoaded
+		? getStartTimeOptions(
+				selectedCalendarDateKey,
+				startOptionsCenterMinuteOfDay,
+				selectedCalendarMeetings
+			)
+		: [];
 
-    let bookingOptions = generateTimeBookingOptions(24 * 60);
-    let extendOptions = generateTimeBookingOptions(24 * 60);
-    let startTimeOptions: Array<{ value: number; label: string }> = [{ value: 0, label: 'Nu' }];
+	$: if (
+		selectedStartMinuteOfDay != null &&
+		!selectedStartAllowedMinutes.includes(selectedStartMinuteOfDay)
+	) {
+		selectedStartMinuteOfDay = null;
+		startOptionsAnchorMinuteOfDay = null;
+		showPreviewMeeting = false;
+	}
 
-    $: minutesUntilNextMeeting = room?.minutesUntilNextMeeting ?? null;
+	$: bookingOptions =
+		selectedStartMinuteOfDay != null
+			? generateTimeBookingOptions(
+					availableMinutesForBooking,
+					null,
+					availableMinutesForBooking > 0 ? availableMinutesForBooking : null
+				)
+			: [];
 
-    $: startTimeOptions = (() => {
-        const now = new Date();
-        const options: Array<{ value: number; label: string }> = [];
-        const base = minutesUntilNextMeeting ?? Number.POSITIVE_INFINITY;
+	$: if (!bookingOptions.find((option) => option.value === selectedBookingOption)) {
+		selectedBookingOption = bookingOptions[0]?.value ?? 30;
+	}
 
-        if (minutesUntilNextMeeting !== null && base < MIN_BOOKING_MINUTES) {
-            return options;
-        }
+	$: selectedBookingOptionItem = getSelectedOption(bookingOptions, selectedBookingOption);
+	$: selectedStartOption = getSelectedOption(startTimeOptions, selectedStartMinuteOfDay);
 
-        options.push({ value: 0, label: 'Nu' });
+	$: if (
+		room &&
+		(room.minutesUntilNextMeeting !== previousExtendMaxTime ||
+			room.currentMeetingEndsIn !== previousRemainingTime)
+	) {
+		previousExtendMaxTime = room.minutesUntilNextMeeting;
+		previousRemainingTime = room.currentMeetingEndsIn;
+		extendOptions = generateTimeBookingOptions(
+			previousExtendMaxTime ?? 24 * 60,
+			previousRemainingTime ?? null,
+			room.minutesUntilNextMeeting
+		);
+	}
 
-        const remainder = now.getMinutes() % 15;
-        const firstOffset = remainder === 0 ? 15 : 15 - remainder;
-        const offsets = [firstOffset, firstOffset + 15];
+	$: if (!extendOptions.find((option) => option.value === selectedExtendOption)) {
+		selectedExtendOption = extendOptions[0]?.value ?? 0;
+	}
 
-        for (const offset of offsets) {
-            if (offset >= base) continue;
-            if (base - offset < MIN_BOOKING_MINUTES) continue;
-            const futureDate = new Date(now.getTime() + offset * 60 * 1000);
-            options.push({ value: offset, label: timeFormatter.format(futureDate) });
-        }
+	$: selectedExtendOptionItem = getSelectedOption(extendOptions, selectedExtendOption);
+	$: nextMeeting = getNextMeeting(room?.todaysMeetings ?? []);
+	$: isViewingToday = selectedCalendarDateKey === createDateKey(new Date());
+	$: currentOngoingMeeting =
+		isViewingToday && room?.status === 'Upptagen' ? room.currentMeeting ?? null : null;
+	$: currentOngoingMeetingIdentity = currentOngoingMeeting
+		? getMeetingIdentity(currentOngoingMeeting)
+		: null;
+	$: currentOngoingMeetingEndMinuteOfDay = currentOngoingMeeting
+		? getMinutesFromDateTime(currentOngoingMeeting.endDate)
+		: null;
+	$: isSelectedAfterOngoingMeeting =
+		currentOngoingMeetingEndMinuteOfDay != null &&
+		selectedStartMinuteOfDay != null &&
+		selectedStartMinuteOfDay >= currentOngoingMeetingEndMinuteOfDay;
+	$: isViewingNonCurrentMeeting =
+		Boolean(
+			currentOngoingMeetingIdentity &&
+			selectedMeetingFallback &&
+			getMeetingIdentity(selectedMeetingFallback) !== currentOngoingMeetingIdentity
+		);
+	$: selectedCalendarLabel = formatSelectedDayLabel(parseDateKey(selectedCalendarDateKey));
+	$: showNextMeetingSummary = Boolean(room?.minutesUntilNextMeeting && nextMeeting);
+	$: canExtend = canExtendRoom(room, selectedExtendOption);
+	$: hasSelectableSlots =
+		selectedCalendarMeetingsLoaded && selectedDayValidStartMinutes.length > 0;
+	$: canBookSelection = canBookSelectedSlot(selectedStartMinuteOfDay, bookingOptions);
+	$: previewMeeting =
+		selectedStartMinuteOfDay != null && canBookSelection && showPreviewMeeting
+			? createMeetingFromSelection(
+					selectedCalendarDateKey,
+					selectedStartMinuteOfDay,
+					selectedBookingOption,
+					'Ny bokning'
+				)
+			: null;
+	$: sidebarState = getSidebarState({
+		isSelectedAfterOngoingMeeting,
+		isViewingNonCurrentMeeting,
+		isViewingToday,
+		selectedStartMinuteOfDay,
+		selectedMeeting: selectedMeetingFallback
+	});
+	$: canCancelSelectedMeeting =
+		sidebarState === 'meetingSelected'
+			? canCancelSelectedMeetingInSidebar(selectedMeetingFallback, selectedCalendarDateKey)
+			: false;
+	$: selectedMeetingCancelMessage =
+		sidebarState === 'meetingSelected'
+			? getSelectedMeetingCancelMessage(selectedMeetingFallback, selectedCalendarDateKey)
+			: null;
+	$: calendarHighlightedMeetingIdentity =
+		selectedMeetingIdentity ??
+		(sidebarState === 'defaultTodayStatus' ? currentOngoingMeetingIdentity : null);
 
-        return options;
-    })();
+	$: if (selectedMeetingIdentity) {
+		const matchingMeeting = getMeetingByIdentity(selectedCalendarMeetings, selectedMeetingIdentity);
 
-    $: if (!startTimeOptions.find((option) => option.value === selectedStartOffset)) {
-        selectedStartOffset = startTimeOptions[0]?.value ?? 0;
-    }
+		if (matchingMeeting) {
+			selectedMeetingFallback = matchingMeeting;
+		}
+	}
 
-    $: availableMinutesForBooking = (() => {
-        const base = minutesUntilNextMeeting ?? 24 * 60;
-        const remaining = base - selectedStartOffset;
-        return remaining >= MIN_BOOKING_MINUTES ? remaining : 0;
-    })();
+	function getSidebarState({
+		isSelectedAfterOngoingMeeting,
+		isViewingNonCurrentMeeting,
+		isViewingToday,
+		selectedStartMinuteOfDay,
+		selectedMeeting
+	}: {
+		isSelectedAfterOngoingMeeting: boolean;
+		isViewingNonCurrentMeeting: boolean;
+		isViewingToday: boolean;
+		selectedStartMinuteOfDay: number | null;
+		selectedMeeting: Meeting | null;
+	}): RoomBookingSidebarState {
+		if (
+			isViewingToday &&
+			room?.status === 'Upptagen' &&
+			!isSelectedAfterOngoingMeeting &&
+			!isViewingNonCurrentMeeting
+		) {
+			return 'defaultTodayStatus';
+		}
 
-    $: bookingOptions = generateTimeBookingOptions(
-        availableMinutesForBooking,
-        null,
-        minutesUntilNextMeeting != null &&
-            minutesUntilNextMeeting - selectedStartOffset >= MIN_BOOKING_MINUTES
-            ? minutesUntilNextMeeting - selectedStartOffset
-            : null
-    );
+		if (selectedMeeting) {
+			return 'meetingSelected';
+		}
 
-    $: if (!bookingOptions.find((option) => option.value === selectedBookingOption)) {
-        selectedBookingOption = bookingOptions[0]?.value ?? 0;
-    }
+		if (selectedStartMinuteOfDay != null) {
+			return 'freeSlotSelected';
+		}
 
-    $: selectedBookingOptionItem = bookingOptions.find(
-        (option) => option.value === selectedBookingOption
-    );
+		return isViewingToday ? 'defaultTodayStatus' : 'emptySelectedDay';
+	}
 
-    $: selectedStartOption = startTimeOptions.find(
-        (option) => option.value === selectedStartOffset
-    );
+	function clearCalendarSelection() {
+		selectedStartMinuteOfDay = null;
+		startOptionsAnchorMinuteOfDay = null;
+		selectedMeetingIdentity = null;
+		selectedMeetingFallback = null;
+		showPreviewMeeting = false;
+	}
 
-    $: if (
-        room &&
-        (room?.minutesUntilNextMeeting !== previousExtendMaxTime ||
-            room?.currentMeetingEndsIn !== previousRemainingTime)
-    ) {
-        previousExtendMaxTime = room?.minutesUntilNextMeeting;
-        previousRemainingTime = room?.currentMeetingEndsIn;
-        extendOptions = generateTimeBookingOptions(
-            previousExtendMaxTime ?? 24 * 60,
-            previousRemainingTime ?? null,
-            room?.minutesUntilNextMeeting
-        );
-    }
-    $: nextMeeting = room?.todaysMeetings?.find(
-        (meeting) => new Date(meeting.startDate) > new Date()
-    );
+	function initializeDefaultOpenSelection(nextRoom: MeetingRoom | null) {
+		const todayDateKey = createDateKey(new Date());
 
-    $: canBook =
-        (room?.minutesUntilNextMeeting == null ||
-            room?.minutesUntilNextMeeting >= MIN_BOOKING_MINUTES) &&
-        startTimeOptions.length > 0 &&
-        bookingOptions.length > 0;
+		if (
+			!nextRoom ||
+			nextRoom.status !== 'Ledig' ||
+			selectedCalendarDateKey !== todayDateKey
+		) {
+			return;
+		}
 
-    $: canExtend =
-        room?.currentMeetingEndsIn != null &&
-        room.currentMeetingEndsIn <= 15 &&
-        selectedExtendOption <= (room.minutesUntilNextMeeting ?? 24 * 60);
+		const currentMinuteOfDay = getCurrentMinuteOfDay();
+		const availableNow = getAvailableMinutesForBooking(
+			todayDateKey,
+			selectedCalendarMeetings,
+			currentMinuteOfDay
+		);
 
-    $: classString = `${extraClasses}`;
+		if (availableNow <= 0) {
+			return;
+		}
+
+		selectedStartMinuteOfDay = currentMinuteOfDay;
+		startOptionsAnchorMinuteOfDay = currentMinuteOfDay;
+		showPreviewMeeting = false;
+	}
+
+	function resetToDefaultTodaySelection(dateKey: string) {
+		selectedCalendarDateKey = dateKey;
+		clearCalendarSelection();
+		initializeDefaultOpenSelection(room);
+	}
+
+	function handleCalendarLayoutChange(event: CustomEvent<{ expanded: boolean }>) {
+		calendarExpanded = Boolean(event.detail?.expanded);
+		dispatch('calendarLayoutChange', event.detail);
+	}
+
+	function handleCalendarSelectionChange(event: CustomEvent<CalendarSelectionChangeDetail>) {
+		const nextDateKey = event.detail?.dateKey ?? createDateKey(new Date());
+		const hasDateChanged = nextDateKey !== selectedCalendarDateKey;
+
+		selectedCalendarDateKey = nextDateKey;
+		selectedCalendarMeetings = event.detail?.meetings ?? [];
+		selectedCalendarMeetingsLoaded = Boolean(event.detail?.meetingsLoaded);
+
+		if (hasDateChanged) {
+			clearCalendarSelection();
+		}
+	}
+
+	function handleCalendarSlotSelect(event: CustomEvent<CalendarSlotSelection>) {
+		const todayDateKey = createDateKey(new Date());
+		const isTodaySelection = event.detail.dateKey === todayDateKey;
+		const currentMinuteOfDay = isTodaySelection ? getCurrentMinuteOfDay() : null;
+
+		if (
+			isTodaySelection &&
+			currentMinuteOfDay != null &&
+			event.detail.requestedMinuteOfDay < currentMinuteOfDay
+		) {
+			resetToDefaultTodaySelection(event.detail.dateKey);
+			showPreviewMeeting = selectedStartMinuteOfDay != null;
+			return;
+		}
+
+		if (
+			room?.status === 'Upptagen' &&
+			isTodaySelection &&
+			currentOngoingMeetingEndMinuteOfDay != null &&
+			event.detail.requestedMinuteOfDay < currentOngoingMeetingEndMinuteOfDay
+		) {
+			resetToDefaultTodaySelection(event.detail.dateKey);
+			return;
+		}
+
+		selectedCalendarDateKey = event.detail.dateKey;
+		selectedStartMinuteOfDay = event.detail.startMinuteOfDay;
+		startOptionsAnchorMinuteOfDay = event.detail.startMinuteOfDay;
+		selectedMeetingIdentity = null;
+		selectedMeetingFallback = null;
+		showPreviewMeeting = true;
+	}
+
+	function handleCalendarMeetingSelect(event: CustomEvent<CalendarMeetingSelection>) {
+		const isTodaySelection = event.detail.dateKey === createDateKey(new Date());
+
+		if (
+			room?.status === 'Upptagen' &&
+			isTodaySelection &&
+			currentOngoingMeetingIdentity &&
+			event.detail.meetingIdentity === currentOngoingMeetingIdentity
+		) {
+			clearCalendarSelection();
+			return;
+		}
+
+		selectedCalendarDateKey = event.detail.dateKey;
+		selectedStartMinuteOfDay = null;
+		startOptionsAnchorMinuteOfDay = null;
+		selectedMeetingIdentity = event.detail.meetingIdentity;
+		selectedMeetingFallback = event.detail.meeting;
+	}
+
+	$: if (room?.email !== previousRoomEmail) {
+		previousRoomEmail = room?.email ?? null;
+		selectedCalendarDateKey = createDateKey(new Date());
+		selectedCalendarMeetings = room?.todaysMeetings ?? [];
+		selectedCalendarMeetingsLoaded = true;
+		optimisticMeetings = [];
+		hiddenMeetingIdentities = [];
+		clearCalendarSelection();
+		initializeDefaultOpenSelection(room);
+	}
+
+	async function handleBook() {
+		if (!room || selectedStartMinuteOfDay == null) return;
+
+		const bookedMeeting = await handleBooking(
+			room,
+			selectedBookingOption,
+			selectedCalendarDateKey,
+			selectedStartMinuteOfDay,
+			dispatch
+		);
+
+		if (!bookedMeeting) {
+			return;
+		}
+
+		optimisticMeetings = mergeMeetings(optimisticMeetings, [bookedMeeting]);
+		selectedCalendarMeetings = mergeMeetings(selectedCalendarMeetings, [bookedMeeting]);
+		selectedMeetingIdentity = getMeetingIdentity(bookedMeeting);
+		selectedMeetingFallback = bookedMeeting;
+		selectedStartMinuteOfDay = null;
+		startOptionsAnchorMinuteOfDay = null;
+	}
+
+	function handleExtendBooking() {
+		if (!room) return;
+		return handleExtend(room, selectedExtendOption, dispatch);
+	}
+
+	async function handleCancelBooking() {
+		if (!room) return;
+		const meetingToCancel =
+			sidebarState === 'meetingSelected' ? selectedMeetingFallback : room.currentMeeting;
+		const canceledMeeting = await handleCancel(room, dispatch, meetingToCancel);
+
+		if (!canceledMeeting || sidebarState !== 'meetingSelected') {
+			return;
+		}
+
+		const canceledMeetingIdentity = getMeetingIdentity(canceledMeeting);
+		optimisticMeetings = optimisticMeetings.filter(
+			(meeting) => getMeetingIdentity(meeting) !== canceledMeetingIdentity
+		);
+		selectedCalendarMeetings = selectedCalendarMeetings.filter(
+			(meeting) => getMeetingIdentity(meeting) !== canceledMeetingIdentity
+		);
+		hiddenMeetingIdentities = Array.from(
+			new Set([...hiddenMeetingIdentities, canceledMeetingIdentity])
+		);
+		clearCalendarSelection();
+
+		if (selectedCalendarDateKey === createDateKey(new Date())) {
+			initializeDefaultOpenSelection(room);
+		}
+	}
 </script>
 
 {#if room}
-    <div class="wrapper gap-4 text-text">
-        <div class="flex flex-row {extraClasses} gap-4">
-            <div class="flex flex-col gap-4 w-[400px]">
-                {#if room.status === 'Upptagen'}
-                    <Tag color="red" text={room.status}></Tag>
-                {:else}
-                    <div class="flex flex-row justify-between items-center">
-                        <Tag color="green" text={room.status}></Tag>
-                        {#if room.minutesUntilNextMeeting && nextMeeting}
-                            <p class="text-sm text-gray-500">
-                                {formatTimeInHoursAndMinutes(room.minutesUntilNextMeeting)} till nästa
-                                möte
-                            </p>
-                        {:else}
-                            <p class="text-sm text-gray-500">Tillgänglig resten av dagen</p>
-                        {/if}
-                    </div>
-                {/if}
+	<div class="wrapper gap-4 text-text">
+		<div class={`flex min-h-0 flex-row gap-4 ${extraClasses}`}>
+			<RoomBookingSidebar
+				{room}
+				viewState={sidebarState}
+				expanded={calendarExpanded}
+				{isViewingToday}
+				{selectedCalendarLabel}
+				{showNextMeetingSummary}
+				calendarDayLoaded={selectedCalendarMeetingsLoaded}
+				hasSelectableSlots={hasSelectableSlots}
+				canBookSelection={canBookSelection}
+				{canExtend}
+				{startTimeOptions}
+				{bookingOptions}
+				{extendOptions}
+				selectedStartOption={selectedStartOption}
+				selectedBookingOption={selectedBookingOptionItem}
+				selectedExtendOption={selectedExtendOptionItem}
+				selectedMeeting={selectedMeetingFallback}
+				{canCancelSelectedMeeting}
+				{selectedMeetingCancelMessage}
+				on:startoffsetchange={(event) => {
+					selectedStartMinuteOfDay = event.detail;
+					showPreviewMeeting = true;
+				}}
+				on:bookingoptionchange={(event) => {
+					selectedBookingOption = event.detail;
+					showPreviewMeeting = true;
+				}}
+				on:extendoptionchange={(event) => (selectedExtendOption = event.detail)}
+				on:book={handleBook}
+				on:extend={handleExtendBooking}
+				on:cancel={handleCancelBooking}
+			/>
 
-                {#if room.status === 'Upptagen'}
-                    <div class="flex items-center gap-1">
-                        <Icon icon="Person" size="14px" />
-                        <p><strong>Mötesbokare:</strong> {room.currentMeetingOrganizer}</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <HourglassIcon size="14px" minutes={room.currentMeetingEndsIn} />
-                        <p><strong>Klart om:</strong> {room.currentMeetingEndsIn} minuter</p>
-                    </div>
-
-                    <div class="mt-auto space-y-4">
-                        {#if canExtend}
-                            <div class="flex flex-col gap-2">
-                                <label for="bookingTime" class="text-sm text-gray-600 font-medium">
-                                    Välj bokningstid:
-                                </label>
-
-                                <OptionsButton
-                                    options={bookingOptions}
-                                    selectedOption={selectedBookingOptionItem ?? bookingOptions[0]}
-                                    on:select={(e) => (selectedBookingOption = e.detail)}
-                                    type="secondary"
-                                />
-                            </div>
-                            <Button
-                                type="secondary"
-                                fullWidth
-                                on:click={() => handleExtend(room, selectedExtendOption, dispatch)}
-                                >Förläng</Button
-                            >
-                        {/if}
-                        <Button
-                            type="cancel"
-                            fullWidth
-                            on:click={() => handleCancel(room, dispatch)}>Avboka</Button
-                        >
-                    </div>
-                {/if}
-
-                {#if room.status === 'Ledig'}
-                    {#if canBook}
-                        <div class="flex flex-col gap-2 mt-auto">
-                            <label for="startTime" class="text-sm text-gray-600 font-medium">
-                                Välj starttid:
-                            </label>
-
-                            <OptionsButton
-                                options={startTimeOptions}
-                                selectedOption={selectedStartOption ?? startTimeOptions[0]}
-                                on:select={(e) => (selectedStartOffset = e.detail)}
-                            />
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-                            <label for="bookingTime" class="text-sm text-gray-600 font-medium">
-                                Välj bokningstid:
-                            </label>
-
-                            <OptionsButton
-                                options={bookingOptions}
-                                selectedOption={selectedBookingOptionItem ?? bookingOptions[0]}
-                                on:select={(e) => (selectedBookingOption = e.detail)}
-                            />
-                        </div>
-
-                        <Button
-                            type="primary"
-                            fullWidth
-                            on:click={() =>
-                                handleBooking(
-                                    room,
-                                    selectedBookingOption,
-                                    selectedStartOffset,
-                                    dispatch
-                                )}
-                            >Boka</Button
-                        >
-                    {/if}
-                {/if}
-            </div>
-
-            {#if room.todaysMeetings && room.todaysMeetings.length > 0}
-                <div class="w-[400px]">
-                    <DailyCalendar meetings={room.todaysMeetings}></DailyCalendar>
-                </div>
-            {/if}
-        </div>
-    </div>
+			<div
+				class={`min-h-0 min-w-0 flex-1 transition-[max-width] duration-300 ease-out ${
+					calendarExpanded ? 'max-w-none' : 'max-w-[400px]'
+				}`}
+			>
+				{#key room.email}
+					<DailyCalendar
+						roomEmail={room.email}
+						todaysMeetings={room.todaysMeetings ?? []}
+						{optimisticMeetings}
+						{hiddenMeetingIdentities}
+						{previewMeeting}
+						selectedMeetingIdentity={calendarHighlightedMeetingIdentity}
+						on:layoutchange={handleCalendarLayoutChange}
+						on:selectionchange={handleCalendarSelectionChange}
+						on:slotselect={handleCalendarSlotSelect}
+						on:meetingselect={handleCalendarMeetingSelect}
+					/>
+				{/key}
+			</div>
+		</div>
+	</div>
 {/if}

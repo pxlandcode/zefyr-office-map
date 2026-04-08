@@ -25,6 +25,7 @@ export interface Meeting {
     endDate: string;
     organizer: string;
     roomName?: string;
+    isPanelBooking?: boolean;
 }
 
 export interface MeetingRoomStatus {

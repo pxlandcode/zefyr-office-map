@@ -16,9 +16,26 @@
     let formEl: HTMLFormElement | null = null;
 
     $: pinpadState = form?.success ? 'success' : form?.errors?.pin ? 'error' : 'idle';
+
+    function handlePageClick(event: MouseEvent) {
+        if (!(event.target instanceof Element)) return;
+        if (event.target.closest('input, textarea, select, [contenteditable="true"], label')) return;
+
+        const active = document.activeElement;
+        if (
+            active instanceof HTMLInputElement ||
+            active instanceof HTMLTextAreaElement ||
+            active instanceof HTMLSelectElement
+        ) {
+            active.blur();
+        }
+    }
 </script>
 
-<main class="relative min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
+<main
+    class="relative min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8"
+    on:click|capture={handlePageClick}
+>
     <a
         href="/"
         class="absolute top-6 right-6 text-sm font-medium text-gray-600 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"

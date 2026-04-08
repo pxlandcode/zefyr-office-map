@@ -1,9 +1,10 @@
 import { format } from 'date-fns-tz';
-import type { MeetingRoom } from '$lib/types/roomTypes';
+import type { Meeting, MeetingRoom } from '$lib/types/roomTypes';
 import { AppNotificationType } from '$lib/types/notificationTypes';
 import { addNotification } from '../../../stores/notificationStore';
 import { bookRoom, cancelRoomBooking, extendRoomBooking } from '$lib/utils/api/api.js';
 import { runWithPin } from '$lib/stores/pinPromptStore'; // ✅ new
+import { createDateTimeFromDateKeyAndMinute } from '$lib/utils/helpers/calendarHelpers';
 
 export const MIN_BOOKING_MINUTES = 15;
 
@@ -13,6 +14,13 @@ export const bookingOptions: Record<number, string> = {
     90: '90 min',
     120: '120 min',
 };
+
+const bookingDateFormatter = new Intl.DateTimeFormat('sv-SE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'Europe/Stockholm',
+});
 
 /** Client-side validator used by the PIN modal.
  *  Returns true on 200 OK, otherwise a short error string.
@@ -59,9 +67,12 @@ export function generateTimeBookingOptions(
 export async function handleBooking(
     room: MeetingRoom,
     selectedBookingOption: number,
-    selectedStartOffset: number,
+    selectedDateKey: string,
+    selectedStartMinuteOfDay: number,
     dispatch: (event: string) => void
 ) {
+    let bookedMeeting: Meeting | null = null;
+
     const ok = await runWithPin({
         title: 'Bekräfta bokning',
         confirmIcon: 'CheckMeeting',
@@ -69,25 +80,45 @@ export async function handleBooking(
         actionLabel: 'Bokar…',
         runSuccessDelay: 300,
         run: async (pin) => {
-            await bookRoom(room.email, selectedBookingOption, selectedStartOffset, pin);
+            const response = await bookRoom(
+                room.email,
+                selectedBookingOption,
+                selectedDateKey,
+                selectedStartMinuteOfDay,
+                pin
+            );
+
+            if (typeof response !== 'string') {
+                bookedMeeting = response.meeting;
+            }
+
             dispatch('bookingUpdated'); // refresh behind the modal
         },
     });
-    if (!ok) return;
+    if (!ok) return null;
 
-    const startTime = new Date();
-    startTime.setMinutes(startTime.getMinutes() + selectedStartOffset);
+    const startTime = createDateTimeFromDateKeyAndMinute(
+        selectedDateKey,
+        selectedStartMinuteOfDay
+    );
     const formattedStartTime = format(startTime, 'HH:mm', { timeZone: 'Europe/Stockholm' });
+    const formattedDate = bookingDateFormatter.format(startTime);
 
     addNotification({
         type: AppNotificationType.SUCCESS,
         message: 'Bokning genomförd',
-        description: `Rummet ${room.name} har bokats från ${formattedStartTime} i ${selectedBookingOption} minuter.`,
+        description: `Rummet ${room.name} har bokats ${formattedDate} från ${formattedStartTime} i ${selectedBookingOption} minuter.`,
     });
+
+    return bookedMeeting;
 }
 
 // CANCEL
-export async function handleCancel(room: MeetingRoom, dispatch: (event: string) => void) {
+export async function handleCancel(
+    room: MeetingRoom,
+    dispatch: (event: string) => void,
+    meetingToCancel: Meeting | null = room.currentMeeting
+) {
     const ok = await runWithPin({
         title: 'Bekräfta avbokning',
         confirmIcon: 'CrossMeeting',
@@ -95,22 +126,24 @@ export async function handleCancel(room: MeetingRoom, dispatch: (event: string) 
         actionLabel: 'Avbokar…',
         runSuccessDelay: 300,
         run: async (pin) => {
-            await cancelRoomBooking(room.email, pin);
+            await cancelRoomBooking(room.email, pin, meetingToCancel?.id);
             dispatch('bookingUpdated');
         },
     });
     if (!ok) return;
 
-    if (room.currentMeeting) {
+    if (meetingToCancel) {
         addNotification({
             type: AppNotificationType.CANCEL,
             message: 'Bokning avslutad',
-            description: `Tiden ${format(new Date(room.currentMeeting.startDate), 'HH:mm')} - ${format(
-                new Date(room.currentMeeting.endDate),
+            description: `Tiden ${format(new Date(meetingToCancel.startDate), 'HH:mm')} - ${format(
+                new Date(meetingToCancel.endDate),
                 'HH:mm'
             )} har avbokats för rummet ${room.name}.`,
         });
     }
+
+    return meetingToCancel;
 }
 
 // EXTEND

@@ -1,10 +1,15 @@
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+
+const TIME_ZONE = 'Europe/Stockholm';
+
 export async function getRoomEvents(
     client: any,
     roomEmail: string,
     startDate: Date,
     endDate: Date
 ) {
-    return await client
+    const events = [] as any[];
+    let response = await client
         .api(`/users/${roomEmail}/calendarView`)
         .header('Prefer', 'outlook.timezone="W. Europe Standard Time"')
         .query({
@@ -12,6 +17,53 @@ export async function getRoomEvents(
             endDateTime: endDate.toISOString(),
         })
         .get();
+
+    events.push(...(response?.value ?? []));
+
+    while (response?.['@odata.nextLink']) {
+        response = await client
+            .api(response['@odata.nextLink'])
+            .header('Prefer', 'outlook.timezone="W. Europe Standard Time"')
+            .get();
+        events.push(...(response?.value ?? []));
+    }
+
+    return { value: events };
+}
+
+function normalizeEventDateTime(dateTime: string) {
+    const hasExplicitOffset = /(?:Z|[+-]\d{2}:\d{2})$/i.test(dateTime);
+    const parsedDate = hasExplicitOffset ? new Date(dateTime) : fromZonedTime(dateTime, TIME_ZONE);
+    return formatInTimeZone(parsedDate, TIME_ZONE, "yyyy-MM-dd'T'HH:mm:ss");
+}
+
+function formatGraphDateTime(dateTime: string | Date, timeZone: string) {
+    const parsedDate = dateTime instanceof Date ? dateTime : new Date(dateTime);
+    return formatInTimeZone(parsedDate, timeZone, "yyyy-MM-dd'T'HH:mm:ss");
+}
+
+export function normalizeCalendarEvent(event: any) {
+    const organizerName = event.organizer?.emailAddress?.name ?? 'Okänd';
+    const isPanelBooking = Boolean(event.categories?.includes('PanelBooking'));
+    const panelBooker = isPanelBooking ? extractPanelBookingName(event) : null;
+    const displayOrganizer = isPanelBooking ? (panelBooker ?? 'Bokat på panel') : organizerName;
+
+    return {
+        id: event.id,
+        startDate: normalizeEventDateTime(event.start.dateTime),
+        endDate: normalizeEventDateTime(event.end.dateTime),
+        organizer: displayOrganizer,
+        isPanelBooking,
+    };
+}
+
+export function normalizeCalendarEvents(events: any) {
+    return (events?.value ?? [])
+        .map((event: any) => normalizeCalendarEvent(event))
+        .sort(
+            (left: { startDate: string }, right: { startDate: string }) =>
+                new Date(left.startDate).getTime() - new Date(right.startDate).getTime()
+        );
 }
 
 export function processMeetingStatus(events: any, now: Date) {
@@ -20,34 +72,25 @@ export function processMeetingStatus(events: any, now: Date) {
     let nextMeeting: string | null = null;
     let currentMeetingOrganizer: string | null = null;
     let nextMeetingOrganizer: string | null = null;
-    const todaysMeetings: any[] = [];
+    const todaysMeetings = normalizeCalendarEvents(events);
 
-    events.value.forEach((event: any) => {
-        const start = new Date(event.start.dateTime);
-        const end = new Date(event.end.dateTime);
-        const organizerName = event.organizer?.emailAddress?.name ?? 'Okänd';
-        const isPanelBooking = Boolean(event.categories?.includes('PanelBooking'));
-        const panelBooker = isPanelBooking ? extractPanelBookingName(event) : null;
-        const displayOrganizer = isPanelBooking ? (panelBooker ?? 'Bokat på panel') : organizerName;
-
+    todaysMeetings.forEach((event: any) => {
+        const start = new Date(event.startDate);
+        const end = new Date(event.endDate);
         if (now >= start && now < end) {
             status = 'Upptagen';
             currentMeeting = {
-                startDate: event.start.dateTime,
-                endDate: event.end.dateTime,
-                organizer: displayOrganizer,
+                id: event.id,
+                startDate: event.startDate,
+                endDate: event.endDate,
+                organizer: event.organizer,
+                isPanelBooking: event.isPanelBooking,
             };
             currentMeetingOrganizer = currentMeeting.organizer;
         }
-
-        todaysMeetings.push({
-            startDate: event.start.dateTime,
-            endDate: event.end.dateTime,
-            organizer: displayOrganizer,
-        });
     });
 
-    const upcoming = todaysMeetings.filter((m) => new Date(m.startDate) > now);
+    const upcoming = todaysMeetings.filter((m: { startDate: string }) => new Date(m.startDate) > now);
     if (upcoming.length > 0) {
         nextMeeting = upcoming[0].startDate;
         nextMeetingOrganizer = upcoming[0].organizer;
@@ -111,8 +154,8 @@ export async function createCalendarEvent(
     return client.api(`/users/${roomEmail}/events`).post({
         subject,
         body: { contentType: 'HTML', content: bodyContent },
-        start: { dateTime: startTime, timeZone },
-        end: { dateTime: endTime, timeZone },
+        start: { dateTime: formatGraphDateTime(startTime, timeZone), timeZone },
+        end: { dateTime: formatGraphDateTime(endTime, timeZone), timeZone },
         attendees: [
             {
                 emailAddress: { address: roomEmail, name: 'Bokat på panel' },
@@ -167,8 +210,8 @@ export async function updateMeetingEndTime(
 ) {
     return client.api(`/users/${roomEmail}/events/${eventId}`).patch({
         end: {
-            dateTime: newEndTime.toISOString(),
-            timeZone: 'Europe/Stockholm',
+            dateTime: formatGraphDateTime(newEndTime, TIME_ZONE),
+            timeZone: TIME_ZONE,
         },
     });
 }
