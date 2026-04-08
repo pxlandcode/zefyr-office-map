@@ -1,3 +1,6 @@
+import type { RoomCalendarResponse } from '$lib/types/calendarTypes';
+import type { Meeting } from '$lib/types/roomTypes';
+
 type FetchLike = typeof fetch;
 
 function jsonOrText(res: Response) {
@@ -22,11 +25,25 @@ export async function getRoomStatus(fetcher: FetchLike = fetch) {
     }>;
 }
 
+// GET /api/rooms/calendar
+export async function getRoomCalendar(
+    roomEmail: string,
+    startDate: string,
+    endDate: string,
+    fetcher: FetchLike = fetch
+) {
+    const params = new URLSearchParams({ roomEmail, startDate, endDate });
+    const res = await fetcher(`/api/rooms/calendar?${params.toString()}`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json() as Promise<RoomCalendarResponse>;
+}
+
 // POST /api/rooms/book
 export async function bookRoom(
     roomEmail: string,
     bookingOption: number,
-    startOffsetMinutes: number = 0,
+    startDate: string,
+    startMinuteOfDay: number,
     pin: string,
     opts?: { access_token?: string; fetcher?: FetchLike }
 ) {
@@ -34,23 +51,24 @@ export async function bookRoom(
     const res = await f('/api/rooms/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders(opts?.access_token) },
-        body: JSON.stringify({ roomEmail, bookingOption, startOffsetMinutes, pin }),
+        body: JSON.stringify({ roomEmail, bookingOption, startDate, startMinuteOfDay, pin }),
     });
     if (!res.ok) throw new Error(await res.text());
-    return (await jsonOrText(res)) as { message: string } | string;
+    return (await jsonOrText(res)) as { message: string; meeting: Meeting } | string;
 }
 
 // POST /api/rooms/cancel
 export async function cancelRoomBooking(
     roomEmail: string,
     pin: string,
+    meetingId?: string,
     opts?: { access_token?: string; fetcher?: FetchLike }
 ) {
     const f = opts?.fetcher ?? fetch;
     const res = await f('/api/rooms/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders(opts?.access_token) },
-        body: JSON.stringify({ roomEmail, pin }),
+        body: JSON.stringify({ roomEmail, pin, meetingId }),
     });
     if (!res.ok) throw new Error(await res.text());
     return (await jsonOrText(res)) as { message: string } | string;

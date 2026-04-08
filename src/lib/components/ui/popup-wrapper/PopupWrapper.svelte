@@ -62,11 +62,9 @@
     const viewportWidthConstraint = `calc(100vw - ${viewportPadding}px)`;
     const viewportHeightConstraint = `calc(100dvh - ${viewportPadding}px)`;
 
-    $: modalWidth =
-        width && width !== 'fit-content' ? `min(${width}, ${viewportWidthConstraint})` : 'auto';
+    $: modalWidth = width && width !== 'fit-content' ? width : 'auto';
 
-    $: modalHeight =
-        height && height !== 'fit-content' ? `min(${height}, ${viewportHeightConstraint})` : 'auto';
+    $: modalHeight = height && height !== 'fit-content' ? height : 'auto';
 
     $: modalStyle = `width: ${modalWidth}; max-width: ${viewportWidthConstraint}; height: ${modalHeight}; max-height: ${viewportHeightConstraint};`;
 </script>
@@ -124,6 +122,9 @@
     .modal-content {
         max-width: none;
         max-height: none;
+        transition:
+            width 300ms ease,
+            height 300ms ease;
     }
     .modal-inner {
         min-height: 0;
