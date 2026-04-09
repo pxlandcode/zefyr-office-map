@@ -3,6 +3,7 @@
 
     import Icon from '$lib/components/ui/icon-component/Icon.svelte';
     import MeetingProgressIndicator from '$lib/components/ui/meeting-progress-indicator/MeetingProgressIndicator.svelte';
+    import QuickCommands from './QuickCommands.svelte';
     import type { Meeting } from '$lib/types/roomTypes';
 
     const UPCOMING_MIN = 6;
@@ -135,4 +136,6 @@
             {/if}
         {/if}
     </section>
+
+    <QuickCommands />
 </aside>

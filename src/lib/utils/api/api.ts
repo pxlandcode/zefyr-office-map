@@ -1,5 +1,5 @@
 import type { RoomCalendarResponse } from '$lib/types/calendarTypes';
-import type { Meeting } from '$lib/types/roomTypes';
+import type { FindFreeResponse, Meeting } from '$lib/types/roomTypes';
 
 type FetchLike = typeof fetch;
 
@@ -72,6 +72,23 @@ export async function cancelRoomBooking(
     });
     if (!res.ok) throw new Error(await res.text());
     return (await jsonOrText(res)) as { message: string } | string;
+}
+
+// GET /api/rooms/find-free
+export async function findFreeRooms(
+    startDate: string,
+    endDate: string,
+    minDuration: number,
+    fetcher: FetchLike = fetch
+) {
+    const params = new URLSearchParams({
+        startDate,
+        endDate,
+        minDuration: String(minDuration),
+    });
+    const res = await fetcher(`/api/rooms/find-free?${params.toString()}`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json() as Promise<FindFreeResponse>;
 }
 
 // POST /api/rooms/extend

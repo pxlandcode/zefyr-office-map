@@ -33,3 +33,18 @@ export interface MeetingRoomStatus {
     ongoingMeetings: Meeting[];
     upcomingMeetings: Meeting[];
 }
+
+export interface FreeSlot {
+    roomName: string;
+    roomEmail: string;
+    capacity: number;
+    start: string;
+    end: string;
+    durationMinutes: number;
+}
+
+export interface FindFreeResponse {
+    slots: FreeSlot[];
+    searchRange: { start: string; end: string };
+    minDuration: number;
+}
