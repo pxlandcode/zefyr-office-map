@@ -55,10 +55,12 @@
 	let selectedExtendOption = 30;
 	let selectedStartMinuteOfDay: number | null = null;
 	let startOptionsAnchorMinuteOfDay: number | null = null;
+	let bookingSelectionReferenceNow = new Date();
+	let bookingSelectionReferenceDateKey = createDateKey(bookingSelectionReferenceNow);
 	let previousExtendMaxTime: number | null = null;
 	let previousRemainingTime: number | null = null;
 	let calendarExpanded = false;
-	let selectedCalendarDateKey = createDateKey(new Date());
+	let selectedCalendarDateKey = bookingSelectionReferenceDateKey;
 	let selectedCalendarMeetings: Meeting[] = [];
 	let selectedCalendarMeetingsLoaded = true;
 	let selectedMeetingIdentity: string | null = null;
@@ -74,18 +76,23 @@
 
 	$: selectedDayValidStartMinutes =
 		selectedCalendarMeetingsLoaded
-			? getValidStartMinutes(selectedCalendarDateKey, selectedCalendarMeetings)
+			? getValidStartMinutes(
+					selectedCalendarDateKey,
+					selectedCalendarMeetings,
+					bookingSelectionReferenceNow
+				)
 			: [];
 	$: immediateTodayStartMinuteOfDay =
-		selectedCalendarDateKey === createDateKey(new Date())
-			? getCurrentMinuteOfDay()
+		selectedCalendarDateKey === bookingSelectionReferenceDateKey
+			? getCurrentMinuteOfDay(bookingSelectionReferenceNow)
 			: null;
 	$: selectedStartAllowedMinutes =
 		immediateTodayStartMinuteOfDay != null &&
 		getAvailableMinutesForBooking(
 			selectedCalendarDateKey,
 			selectedCalendarMeetings,
-			immediateTodayStartMinuteOfDay
+			immediateTodayStartMinuteOfDay,
+			bookingSelectionReferenceNow
 		) > 0
 			? Array.from(
 					new Set([immediateTodayStartMinuteOfDay, ...selectedDayValidStartMinutes])
@@ -94,15 +101,20 @@
 	$: availableMinutesForBooking = getAvailableMinutesForBooking(
 		selectedCalendarDateKey,
 		selectedCalendarMeetings,
-		selectedStartMinuteOfDay
+		selectedStartMinuteOfDay,
+		bookingSelectionReferenceNow
 	);
 	$: startOptionsCenterMinuteOfDay =
-		startOptionsAnchorMinuteOfDay ?? selectedStartMinuteOfDay;
+		startOptionsAnchorMinuteOfDay != null &&
+		selectedStartAllowedMinutes.includes(startOptionsAnchorMinuteOfDay)
+			? startOptionsAnchorMinuteOfDay
+			: selectedStartMinuteOfDay;
 	$: startTimeOptions = selectedCalendarMeetingsLoaded
 		? getStartTimeOptions(
 				selectedCalendarDateKey,
 				startOptionsCenterMinuteOfDay,
-				selectedCalendarMeetings
+				selectedCalendarMeetings,
+				bookingSelectionReferenceNow
 			)
 		: [];
 
@@ -254,7 +266,7 @@
 	}
 
 	function initializeDefaultOpenSelection(nextRoom: MeetingRoom | null) {
-		const todayDateKey = createDateKey(new Date());
+		const todayDateKey = bookingSelectionReferenceDateKey;
 
 		if (
 			!nextRoom ||
@@ -264,11 +276,12 @@
 			return;
 		}
 
-		const currentMinuteOfDay = getCurrentMinuteOfDay();
+		const currentMinuteOfDay = getCurrentMinuteOfDay(bookingSelectionReferenceNow);
 		const availableNow = getAvailableMinutesForBooking(
 			todayDateKey,
 			selectedCalendarMeetings,
-			currentMinuteOfDay
+			currentMinuteOfDay,
+			bookingSelectionReferenceNow
 		);
 
 		if (availableNow <= 0) {
@@ -305,9 +318,11 @@
 	}
 
 	function handleCalendarSlotSelect(event: CustomEvent<CalendarSlotSelection>) {
-		const todayDateKey = createDateKey(new Date());
+		const todayDateKey = bookingSelectionReferenceDateKey;
 		const isTodaySelection = event.detail.dateKey === todayDateKey;
-		const currentMinuteOfDay = isTodaySelection ? getCurrentMinuteOfDay() : null;
+		const currentMinuteOfDay = isTodaySelection
+			? getCurrentMinuteOfDay(bookingSelectionReferenceNow)
+			: null;
 
 		if (
 			isTodaySelection &&
@@ -359,7 +374,9 @@
 
 	$: if (room?.email !== previousRoomEmail) {
 		previousRoomEmail = room?.email ?? null;
-		selectedCalendarDateKey = createDateKey(new Date());
+		bookingSelectionReferenceNow = new Date();
+		bookingSelectionReferenceDateKey = createDateKey(bookingSelectionReferenceNow);
+		selectedCalendarDateKey = bookingSelectionReferenceDateKey;
 		selectedCalendarMeetings = room?.todaysMeetings ?? [];
 		selectedCalendarMeetingsLoaded = true;
 		optimisticMeetings = [];
@@ -449,6 +466,7 @@
 				{selectedMeetingCancelMessage}
 				on:startoffsetchange={(event) => {
 					selectedStartMinuteOfDay = event.detail;
+					startOptionsAnchorMinuteOfDay = event.detail;
 					showPreviewMeeting = true;
 				}}
 				on:bookingoptionchange={(event) => {
